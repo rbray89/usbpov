@@ -1,0 +1,388 @@
+   1               		.file	"i2cmaster.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+  74               		.section	.text.i2c_init,"ax",@progbits
+  76               	.global	i2c_init
+  78               	i2c_init:
+   1:i2cmaster.c   **** #include "i2cmaster.h"
+   2:i2cmaster.c   **** 
+   3:i2cmaster.c   **** void i2c_init(void)
+   4:i2cmaster.c   **** {
+  79               	e = 0 */
+  81               	.LM1:
+  82               		sts 185,__zero_reg__
+   5:i2cmaster.c   **** #include "i2cmaster.h"
+   6:i2cmaster.c   **** 
+   7:i2cmaster.c   **** void i2c_init(void)
+   8:i2cmaster.c   **** {
+  84               	
+  85               		ldi r24,lo8(4)
+  86 0000 1092 B900 		sts 184,r24
+   9:i2cmaster.c   **** #include "i2cmaster.h"
+  10:i2cmaster.c   **** 
+  11:i2cmaster.c   **** void i2c_init(void)
+  87               	 epilogue start */
+  89 0004 84E0      	.LM3:
+  90 0006 8093 B800 		ret
+  12:i2cmaster.c   **** #include "i2cmaster.h"
+  92               	pe1:
+  93               		.section	.text.i2c_transmit,"ax",@progbits
+  96               	.global	i2c_transmit
+  98               	i2c_transmit:
+ 100               	.LM4:
+ 101               	.LFBB2:
+ 102               	/* prologue: function */
+  13:i2cmaster.c   **** #include "i2cmaster.h"
+  14:i2cmaster.c   **** 
+  15:i2cmaster.c   **** void i2c_init(void)
+ 103               	ze = 0 */
+ 105               	.LM5:
+ 106               		cpi r24,lo8(1)
+ 107               		breq .L6
+  16:i2cmaster.c   **** #include "i2cmaster.h"
+ 108               	r24,lo8(1)
+ 109               		brlo .L5
+ 110 0000 8130      		cpi r24,lo8(2)
+ 111 0002 01F0      		breq .L7
+ 112 0004 8130      		cpi r24,lo8(3)
+ 113 0006 00F0      		brne .L11
+ 114 0008 8230      		rjmp .L14
+ 115 000a 01F0      	.L5:
+ 117 000e 01F4      	.LM6:
+ 118 0010 00C0      		ldi r24,lo8(-92)
+ 119               		rjmp .L13
+  17:i2cmaster.c   **** #include "i2cmaster.h"
+  18:i2cmaster.c   **** 
+ 120               		68,0,21,.LM7-.LFBB2
+ 121               	.LM7:
+ 122 0012 84EA      		ldi r24,lo8(-124)
+ 123 0014 00C0      		rjmp .L13
+ 124               	.L7:
+  19:i2cmaster.c   **** #include "i2cmaster.h"
+  20:i2cmaster.c   **** 
+  21:i2cmaster.c   **** void i2c_init(void)
+ 125               	o8(1)
+ 126               		brlo .L5
+ 127 0016 84E8      		cpi r24,lo8(2)
+ 128 0018 00C0      		breq .L7
+ 129               		cpi r24,lo8(3)
+  22:i2cmaster.c   **** #include "i2cmaster.h"
+  23:i2cmaster.c   **** 
+  24:i2cmaster.c   **** void i2c_init(void)
+ 130               	 .L11
+ 131               		rjmp .L14
+ 132 001a 84EC      	.L5:
+ 134 001c 8093 BC00 	.LM6:
+ 135 0020 00C0      		ldi r24,lo8(-92)
+ 136               		rjmp .L13
+  25:i2cmaster.c   **** #include "i2cmaster.h"
+  26:i2cmaster.c   **** 
+  27:i2cmaster.c   **** void i2c_init(void)
+ 137               	ze = 0 */
+ 139 0022 84E9      	.LM5:
+ 140 0024 8093 BC00 		cpi r24,lo8(1)
+ 141 0028 80E0      		breq .L6
+ 142 002a 0895      		cpi r24,lo8(1)
+ 143               		brlo .L5
+  28:i2cmaster.c   **** #include "i2cmaster.h"
+  29:i2cmaster.c   **** 
+  30:i2cmaster.c   **** void i2c_init(void)
+  31:i2cmaster.c   **** {
+  32:i2cmaster.c   ****   //CPU_clock/(16 + 2*TWBR*(4^prescaler))
+  33:i2cmaster.c   ****   
+ 144               	4,lo8(2)
+ 145               		breq .L7
+ 146 002c 8091 BC00 		cpi r24,lo8(3)
+ 147 0030 87FF      		brne .L11
+ 148 0032 00C0      		rjmp .L14
+  34:i2cmaster.c   **** #include "i2cmaster.h"
+  35:i2cmaster.c   **** 
+  36:i2cmaster.c   **** void i2c_init(void)
+ 150               	.LM6:
+ 151 0034 8091 B900 		ldi r24,lo8(-92)
+ 152 0038 887F      		rjmp .L13
+  37:i2cmaster.c   **** #include "i2cmaster.h"
+ 153               	ze = 0 */
+ 155 003a 0895      	.LM5:
+ 156               		cpi r24,lo8(1)
+ 157               		breq .L6
+ 158               		cpi r24,lo8(1)
+ 159               		brlo .L5
+ 160               		cpi r24,lo8(2)
+ 161               		breq .L7
+ 162               		cpi r24,lo8(3)
+ 163               		brne .L11
+  38:i2cmaster.c   **** #include "i2cmaster.h"
+  39:i2cmaster.c   **** 
+  40:i2cmaster.c   **** void i2c_init(void)
+ 164               	.L5:
+ 166               	.LM6:
+ 167 0000 0F93      		ldi r24,lo8(-92)
+ 168 0002 1F93      		rjmp .L13
+ 169               	.L6:
+ 171 0004 062F      	.LM7:
+ 172               		ldi r24,lo8(-124)
+ 173               		rjmp .L13
+ 174 0006 10E0      	.L7:
+  41:i2cmaster.c   **** #include "i2cmaster.h"
+  42:i2cmaster.c   **** 
+  43:i2cmaster.c   **** void i2c_init(void)
+  44:i2cmaster.c   **** {
+  45:i2cmaster.c   ****   //CPU_clock/(16 + 2*TWBR*(4^prescaler))
+  46:i2cmaster.c   ****   
+  47:i2cmaster.c   ****   // Initial ATMega328P TWI/I2C Peripheral
+  48:i2cmaster.c   ****   TWSR = 0x00;         // Select Prescaler of 0
+  49:i2cmaster.c   **** 
+  50:i2cmaster.c   ****   //8000000/(16 + 2*TWBR*(4^prescaler))
+  51:i2cmaster.c   ****   TWBR = 0x04;        // 4 Decimal
+  52:i2cmaster.c   **** }
+  53:i2cmaster.c   **** 
+  54:i2cmaster.c   **** /* START I2C Routine */
+  55:i2cmaster.c   **** unsigned char i2c_transmit(unsigned char type) {
+  56:i2cmaster.c   ****   switch(type) {
+ 175               	o8(1)
+ 176               		brlo .L5
+ 177 0008 082B      		cpi r24,lo8(2)
+ 178               		breq .L7
+ 179               		cpi r24,lo8(3)
+ 180               		brne .L11
+ 181 000a 1F5F      		rjmp .L14
+ 182 000c 1B35      	.L5:
+ 184               	.LM6:
+ 185               		ldi r24,lo8(-92)
+ 186 0010 80E0      		rjmp .L13
+ 187 0012 00D0      	.L6:
+ 189               	.LM7:
+ 190 0014 8833      		ldi r24,lo8(-124)
+ 191 0016 01F0      		rjmp .L13
+ 192               	.L7:
+ 194 0018 8830      	.LM8:
+ 195 001a 01F0      		ldi r24,lo8(-60)
+ 196 001c 8031      	.L13:
+ 197 001e 01F4      		sts 188,r24
+ 198               		rjmp .L11
+ 199               	.L14:
+ 201 0020 0093 BB00 	.LM9:
+  57:i2cmaster.c   ****  // 4 Decimal
+  58:i2cmaster.c   **** }
+  59:i2cmaster.c   **** 
+ 202               	,r24
+ 203               		ldi r24,lo8(0)
+ 204 0024 81E0      		ret
+ 205 0026 00D0      	.L11:
+  60:i2cmaster.c   ****       // Select Prescaler of 0
+  61:i2cmaster.c   **** 
+  62:i2cmaster.c   ****   //8000000/(16 + 2*TWBR*(4^prescaler))
+ 206               	,lo8(-124)
+ 207               		rjmp .L13
+ 208 0028 8032      	.L7:
+ 210 002c 8833      	.LM8:
+ 211 002e 01F0      		ldi r24,lo8(-60)
+  63:i2cmaster.c   **** 328P TWI/I2C Peripheral
+ 212               	3)
+ 213               		brne .L11
+ 214 0030 8831      		rjmp .L14
+ 215 0032 01F4      	.L5:
+ 217 0036 00C0      	.LM6:
+ 218               		ldi r24,lo8(-92)
+ 219 0038 8FEF      		rjmp .L13
+ 220               	.L6:
+  64:i2cmaster.c   **** r.h"
+  65:i2cmaster.c   **** 
+  66:i2cmaster.c   **** void i2c_init(void)
+  67:i2cmaster.c   **** {
+  68:i2cmaster.c   ****   //CPU_clock/(16 + 2*TWBR*(4^prescaler))
+  69:i2cmaster.c   ****   
+ 222               	B2
+ 223               	.LM5:
+ 224 003a 1F91      		cpi r24,lo8(1)
+ 225 003c 0F91      		breq .L6
+ 226 003e 0895      		cpi r24,lo8(1)
+ 227               		brlo .L5
+ 228               		cpi r24,lo8(2)
+ 229               		breq .L7
+ 230               		cpi r24,lo8(3)
+ 231               		brne .L11
+ 232               		rjmp .L14
+ 233               	.L5:
+ 235               	.LM6:
+ 236               		ldi r24,lo8(-92)
+ 237               		rjmp .L13
+ 238               	.L6:
+  70:i2cmaster.c   **** #include "i2cmaster.h"
+  71:i2cmaster.c   **** 
+  72:i2cmaster.c   **** void i2c_init(void)
+ 239               	LM7-.LFBB2
+ 240               	.LM7:
+ 241               		ldi r24,lo8(-124)
+ 242               		rjmp .L13
+ 243               	.L7:
+  73:i2cmaster.c   **** #include "i2cmaster.h"
+  74:i2cmaster.c   **** 
+  75:i2cmaster.c   **** void i2c_init(void)
+  76:i2cmaster.c   **** {
+ 244               	o8(1)
+ 245               		brlo .L5
+ 246 0000 83E0      		cpi r24,lo8(2)
+ 247 0002 00D0      		breq .L7
+ 248               		cpi r24,lo8(3)
+  77:i2cmaster.c   **** #include "i2cmaster.h"
+ 249               	 .L11
+ 250               		rjmp .L14
+ 251 0004 0895      	.L5:
+ 253               	.LM6:
+ 254               		ldi r24,lo8(-92)
+ 255               		rjmp .L13
+ 256               	.L6:
+ 258               	.LM7:
+ 259               		ldi r24,lo8(-124)
+  78:i2cmaster.c   **** #include "i2cmaster.h"
+  79:i2cmaster.c   **** 
+  80:i2cmaster.c   **** void i2c_init(void)
+ 260               	req .L6
+ 261               		cpi r24,lo8(1)
+ 262               		brlo .L5
+ 263               		cpi r24,lo8(2)
+ 264               		breq .L7
+  81:i2cmaster.c   **** #include "i2cmaster.h"
+  82:i2cmaster.c   **** 
+  83:i2cmaster.c   **** void i2c_init(void)
+  84:i2cmaster.c   **** {
+  85:i2cmaster.c   ****   //CPU_clock/(16 + 2*TWBR*(4^prescaler))
+ 265               	r24,lo8(3)
+ 266               		brne .L11
+ 267 0000 8093 BB00 		rjmp .L14
+  86:i2cmaster.c   **** #include "i2cmaster.h"
+  87:i2cmaster.c   **** 
+  88:i2cmaster.c   **** void i2c_init(void)
+ 268               	:
+ 270 0004 81E0      	.LM6:
+ 271 0006 00D0      		ldi r24,lo8(-92)
+  89:i2cmaster.c   **** #include "i2cmaster.h"
+  90:i2cmaster.c   **** 
+  91:i2cmaster.c   **** void i2c_init(void)
+ 272               	
+ 273               	/* frame size = 0 */
+ 275 000a 01F4      	.LM5:
+ 276 000c 80E0      		cpi r24,lo8(1)
+ 277 000e 0895      		breq .L6
+ 278               		cpi r24,lo8(1)
+ 279 0010 8FEF      		brlo .L5
+ 280               		cpi r24,lo8(2)
+  92:i2cmaster.c   **** #include "i2cmaster.h"
+  93:i2cmaster.c   **** 
+  94:i2cmaster.c   **** void i2c_init(void)
+  95:i2cmaster.c   **** {
+  96:i2cmaster.c   ****   //CPU_clock/(16 + 2*TWBR*(4^prescaler))
+  97:i2cmaster.c   ****   
+ 281               	7
+ 282               		cpi r24,lo8(3)
+ 283 0012 0895      		brne .L11
+ 284               		rjmp .L14
+ 285               	.L5:
+ 287               	.LM6:
+ 288               		ldi r24,lo8(-92)
+ 289               		rjmp .L13
+ 290               	.L6:
+ 292               	.LM7:
+ 293               		ldi r24,lo8(-124)
+ 294               		rjmp .L13
+ 295               	.L7:
+  98:i2cmaster.c   **** #include "i2cmaster.h"
+  99:i2cmaster.c   **** 
+ 100:i2cmaster.c   **** void i2c_init(void)
+ 296               	,.LM8-.LFBB2
+ 297               	.LM8:
+ 298               		ldi r24,lo8(-60)
+ 299 0000 CF93      	.L13:
+ 300 0002 DF93      		sts 188,r24
+ 301               		rjmp .L11
+ 302               	.L14:
+ 101:i2cmaster.c   **** #include "i2cmaster.h"
+ 102:i2cmaster.c   **** 
+ 103:i2cmaster.c   **** void i2c_init(void)
+ 104:i2cmaster.c   **** {
+ 304               	r24,lo8(-92)
+ 305               		rjmp .L13
+ 306 0006 6623      	.L6:
+ 105:i2cmaster.c   **** #include "i2cmaster.h"
+ 106:i2cmaster.c   **** 
+ 308               	B2
+ 309               	.LM5:
+ 310 000a 82E0      		cpi r24,lo8(1)
+ 311 000c 00D0      		breq .L6
+ 107:i2cmaster.c   **** #include "i2cmaster.h"
+ 108:i2cmaster.c   **** 
+ 312               	 r24,lo8(1)
+ 313               		brlo .L5
+ 314 000e 8035      		cpi r24,lo8(2)
+ 315 0010 01F4      		breq .L7
+ 316 0012 00C0      		cpi r24,lo8(3)
+ 317               		brne .L11
+ 109:i2cmaster.c   **** #include "i2cmaster.h"
+ 110:i2cmaster.c   **** 
+ 111:i2cmaster.c   **** void i2c_init(void)
+ 112:i2cmaster.c   **** {
+ 318               	.L14
+ 319               	.L5:
+ 321 0016 00D0      	.LM6:
+ 113:i2cmaster.c   **** #include "i2cmaster.h"
+ 114:i2cmaster.c   **** 
+ 322               	ologue: function */
+ 323               	/* frame size = 0 */
+ 325 001a 01F4      	.LM5:
+ 326               		cpi r24,lo8(1)
+ 115:i2cmaster.c   **** #include "i2cmaster.h"
+ 116:i2cmaster.c   **** 
+ 117:i2cmaster.c   **** void i2c_init(void)
+ 118:i2cmaster.c   **** {
+ 327               	 .L6
+ 328               		cpi r24,lo8(1)
+ 329 001c 8091 BB00 		brlo .L5
+ 330 0020 8883      		cpi r24,lo8(2)
+ 331 0022 80E0      		breq .L7
+ 332 0024 00C0      		cpi r24,lo8(3)
+ 333               		brne .L11
+ 119:i2cmaster.c   **** #include "i2cmaster.h"
+ 120:i2cmaster.c   **** 
+ 121:i2cmaster.c   **** void i2c_init(void)
+ 334               	L14
+ 335               	.L5:
+ 337               	.LM6:
+ 338               		ldi r24,lo8(-92)
+ 122:i2cmaster.c   **** #include "i2cmaster.h"
+ 123:i2cmaster.c   **** 
+ 339               	
+ 340               	/* frame size = 0 */
+ 342 002a CF91      	.LM5:
+ 343 002c 0895      		cpi r24,lo8(1)
+ 344               		breq .L6
+ 345               		cpi r24,lo8(1)
+ 346               		brlo .L5
+ 347               		cpi r24,lo8(2)
+ 348               		breq .L7
+ 349               		cpi r24,lo8(3)
+ 350               		brne .L11
+ 351               		rjmp .L14
+DEFINED SYMBOLS
+                            *ABS*:00000000 i2cmaster.c
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:2      *ABS*:0000003f __SREG__
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:3      *ABS*:0000003e __SP_H__
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:4      *ABS*:0000003d __SP_L__
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:5      *ABS*:00000034 __CCP__
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:6      *ABS*:00000000 __tmp_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:7      *ABS*:00000001 __zero_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:78     .text.i2c_init:00000000 i2c_init
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:102    .text.i2c_transmit:00000000 i2c_transmit
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:163    .text.i2c_start:00000000 i2c_start
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:238    .text.i2c_stop:00000000 i2c_stop
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:259    .text.i2c_write:00000000 i2c_write
+C:\Users\Ryan\AppData\Local\Temp/ccPqdHsn.s:295    .text.i2c_read:00000000 i2c_read
+
+NO UNDEFINED SYMBOLS

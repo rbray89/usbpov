@@ -1,0 +1,1682 @@
+   1               		.file	"main.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+  98               		.section	.text.__vector_14,"ax",@progbits
+ 100               	.global	__vector_14
+ 102               	__vector_14:
+   1:main.c        **** #include <avr/io.h>
+   2:main.c        **** #include <util/delay.h>
+   3:main.c        **** #include <avr/pgmspace.h>
+   4:main.c        **** #include <avr/interrupt.h> 
+   5:main.c        **** #include <avr/eeprom.h>
+   6:main.c        **** #include <avr/wdt.h>
+   7:main.c        **** 
+   8:main.c        **** #include "usbconfig.h"
+   9:main.c        **** #include "usbdrv/usbdrv.h"
+  10:main.c        **** #include "usb.h"
+  11:main.c        **** #include "mma7660.h"
+  12:main.c        **** 
+  13:main.c        **** //defines the Port that is used for the LEDs.
+  14:main.c        **** #define LED_PORT PORTD
+  15:main.c        **** #define LED_DDR  DDRD
+  16:main.c        **** 
+  17:main.c        **** 
+  18:main.c        **** //Space equals 32!!!
+  19:main.c        **** //This defines a character array based off of dot matrix font.
+  20:main.c        **** // the PROGMEM attribute defines that the array is to go into program memory 
+  21:main.c        **** // and not SRAM. it has to be accessed in the following way though:
+  22:main.c        **** // pgm_read_byte(&(characterArray[x][y]))
+  23:main.c        **** unsigned char characterArray[96][6] PROGMEM = {
+  24:main.c        **** {0,	0,	0,	0,	0,	0},// 
+  25:main.c        **** {0,	0,	125,	0,	0,	0},// !
+  26:main.c        **** {0,	112,	0,	112,	0,	0},// "
+  27:main.c        **** {20,	127,	20,	127,	20,	0},// #
+  28:main.c        **** {18,	42,	127,	42,	36,	0},// $
+  29:main.c        **** {18,	42,	127,	42,	36,	0},// %
+  30:main.c        **** {54,	73,	85,	34,	5,	0},// &
+  31:main.c        **** {0,	0,	96,	0,	0,	0},// '
+  32:main.c        **** {0,	28,	34,	65,	0,	0},// (
+  33:main.c        **** {0,	65,	34,	28,	0,	0},// )
+  34:main.c        **** {20,	8,	62,	8,	20,	0},// *
+  35:main.c        **** {8,	8,	62,	8,	8,	0},// +
+  36:main.c        **** {0,	0,	5,	6,	0,	0},// ,
+  37:main.c        **** {0,	0,	5,	6,	0,	0},// -
+  38:main.c        **** {0,	0,	3,	3,	0,	0},// .
+  39:main.c        **** {2,	4,	8,	16,	32,	0},// /
+  40:main.c        **** {62,	69,	73,	81,	62,	0},// 0
+  41:main.c        **** {0,	33,	127,	1,	0,	0},// 1
+  42:main.c        **** {33,	67,	69,	73,	49,	0},// 2
+  43:main.c        **** {34,	65,	73,	73,	54,	0},// 3
+  44:main.c        **** {12,	20,	36,	127,	4,	0},// 4
+  45:main.c        **** {114,	81,	81,	81,	78,	0},// 5
+  46:main.c        **** {30,	41,	73,	73,	6,	0},// 6
+  47:main.c        **** {96,	71,	72,	80,	96,	0},// 7
+  48:main.c        **** {54,	73,	73,	73,	54,	0},// 8
+  49:main.c        **** {48,	73,	73,	74,	60,	0},// 9
+  50:main.c        **** {0,	0,	54,	54,	0,	0},// :
+  51:main.c        **** {0,	0,	53,	54,	0,	0},// ;
+  52:main.c        **** {8,	20,	34,	65,	0,	0},// <
+  53:main.c        **** {20,	20,	20,	20,	20,	0},// =
+  54:main.c        **** {0,	65,	34,	20,	8,	0},// >
+  55:main.c        **** {32,	64,	69,	72,	48,	0},// ?
+  56:main.c        **** {38,	73,	79,	65,	62,	0},// @
+  57:main.c        **** {63,	68,	68,	68,	63,	0},// A
+  58:main.c        **** {127,	73,	73,	73,	54,	0},// B
+  59:main.c        **** {62,	65,	65,	65,	34,	0},// C
+  60:main.c        **** {127,	65,	65,	65,	62,	0},// D
+  61:main.c        **** {127,	73,	73,	73,	65,	0},// E
+  62:main.c        **** {127,	72,	72,	72,	64,	0},// F
+  63:main.c        **** {62,	65,	65,	73,	47,	0},// G
+  64:main.c        **** {127,	8,	8,	8,	127,	0},// H
+  65:main.c        **** {0,	65,	127,	65,	0,	0},// I
+  66:main.c        **** {2,	65,	65,	126,	64,	0},// J
+  67:main.c        **** {127,	8,	20,	34,	65,	0},// K
+  68:main.c        **** {127,	1,	1,	1,	1,	0},// L
+  69:main.c        **** {127,	32,	24,	32,	127,	0},// M
+  70:main.c        **** {127,	16,	8,	4,	127,	0},// N
+  71:main.c        **** {62,	65,	65,	65,	62,	0},// O
+  72:main.c        **** {127,	72,	72,	72,	48,	0},// P
+  73:main.c        **** {62,	65,	69,	66,	61,	0},// Q
+  74:main.c        **** {127,	72,	76,	74,	49,	0},// R
+  75:main.c        **** {50,	73,	73,	73,	38,	0},// S
+  76:main.c        **** {64,	64,	127,	64,	64,	0},// T
+  77:main.c        **** {126,	1,	1,	1,	126,	0},// U
+  78:main.c        **** {124,	2,	1,	2,	124,	0},// V
+  79:main.c        **** {126,	1,	14,	1,	126,	0},// W
+  80:main.c        **** {99,	20,	8,	20,	99,	0},// X
+  81:main.c        **** {112,	8,	7,	8,	112,	0},// Y
+  82:main.c        **** {67,	69,	73,	81,	97,	0},// Z
+  83:main.c        **** {0,	127,	65,	65,	0,	0},// [
+  84:main.c        **** {32,	16,	8,	4,	2,	0},// backslash  
+  85:main.c        **** {0,	65,	65,	127,	0,	0},// ]
+  86:main.c        **** {16,	32,	64,	32,	16,	0},// ^
+  87:main.c        **** {1,	1,	1,	1,	1,	0},// _
+  88:main.c        **** {0,	64,	32,	16,	0,	0},// `
+  89:main.c        **** {2,	21,	21,	21,	15,	0},// a
+  90:main.c        **** {127,	9,	17,	17,	14,	0},// b
+  91:main.c        **** {14,	17,	17,	17,	2,	0},// c
+  92:main.c        **** {14,	17,	17,	9,	127,	0},// d
+  93:main.c        **** {14,	21,	21,	21,	12,	0},// e
+  94:main.c        **** {8,	63,	72,	64,	32,	0},// f
+  95:main.c        **** {8,	21,	21,	21,	30,	0},// g
+  96:main.c        **** {127,	8,	16,	16,	15,	0},// h
+  97:main.c        **** {0,	9,	95,	1,	0,	0},// i
+  98:main.c        **** {0,	2,	1,	17,	94,	0},// j
+  99:main.c        **** {0,	127,	4,	10,	17,	0},// k
+ 100:main.c        **** {0,	65,	127,	1,	0,	0},// l
+ 101:main.c        **** {31,	16,	15,	16,	15,	0},// m
+ 102:main.c        **** {31,	8,	16,	16,	15,	0},// n
+ 103:main.c        **** {14,	17,	17,	17,	14,	0},// o
+ 104:main.c        **** {31,	20,	20,	20,	8,	0},// p
+ 105:main.c        **** {8,	20,	20,	12,	31,	0},// q
+ 106:main.c        **** {31,	8,	16,	16,	8,	0},// r
+ 107:main.c        **** {9,	21,	21,	21,	2,	0},// s
+ 108:main.c        **** {16,	126,	17,	1,	2,	0},// t
+ 109:main.c        **** {30,	1,	1,	2,	31,	0},// u
+ 110:main.c        **** {28,	2,	1,	2,	28,	0},// v
+ 111:main.c        **** {30,	1,	6,	1,	30,	0},// w
+ 112:main.c        **** {17,	10,	4,	10,	17,	0},// x
+ 113:main.c        **** {24,	5,	5,	5,	30,	0},// y
+ 114:main.c        **** {17,	19,	21,	25,	17,	0},// z
+ 115:main.c        **** {0,	8,	54,	65,	0,	0},// {
+ 116:main.c        **** {0,	0,	127,	0,	0,	0},// |
+ 117:main.c        **** {0,	65,	54,	8,	0,	0},// }
+ 118:main.c        **** {4,	8,	8,	4,	8,	0},// ~
+ 119:main.c        **** {4,	50,	2,	50,	4,	0}// SMILEY		95+32 = 0x7F
+ 120:main.c        **** };
+ 121:main.c        **** 
+ 122:main.c        **** #define MAXPGMCHAR 96
+ 123:main.c        **** 
+ 124:main.c        **** volatile unsigned char eepromChars[8][6];
+ 125:main.c        **** //*************  Hover Text Message  ***************
+ 126:main.c        **** volatile unsigned char message[200];
+ 127:main.c        **** volatile unsigned char msgLength;
+ 128:main.c        **** volatile unsigned int  STRING_DELAY;	
+ 129:main.c        **** 
+ 130:main.c        **** 
+ 131:main.c        **** volatile signed int characterPosition = 0;
+ 132:main.c        **** volatile signed int linePosition = 0;
+ 133:main.c        **** volatile char LEDToggle = 0;
+ 134:main.c        **** volatile unsigned int delay = 0;
+ 135:main.c        **** volatile char startFloat = 0;
+ 136:main.c        **** volatile char direction = 0;
+ 137:main.c        **** 
+ 138:main.c        **** volatile unsigned int time = 0;
+ 139:main.c        **** volatile unsigned char stringNumS = 0;
+ 140:main.c        **** volatile unsigned char stringNumE = 0;
+ 141:main.c        **** 
+ 142:main.c        **** 
+ 143:main.c        **** int main(void)
+ 144:main.c        **** {
+ 145:main.c        **** 
+ 146:main.c        **** //USB 16 bit detection timer
+ 147:main.c        **** TCCR1B |= ((1 << CS12));// | (1 << CS10)); // Set up timer at Fcpu/256 
+ 148:main.c        **** 
+ 149:main.c        **** 	wdt_enable(WDTO_1S);
+ 150:main.c        **** 	
+ 151:main.c        **** 	usbHardwareInit();
+ 152:main.c        **** 
+ 153:main.c        **** 	usbInit();
+ 154:main.c        **** 	sei();
+ 155:main.c        **** TCNT1 = 0;
+ 156:main.c        ****     for(;;){    // main event loop 
+ 157:main.c        ****         wdt_reset();
+ 158:main.c        ****         usbPoll();
+ 159:main.c        **** //ticks = .3*12000000/256 = 23437
+ 160:main.c        **** 	if( !usbDetected && TCNT1 > 40437)
+ 161:main.c        **** 		break;
+ 162:main.c        **** 	}
+ 163:main.c        **** //	cli();
+ 164:main.c        **** 	wdt_disable();
+ 165:main.c        **** 	EIMSK  &= ~(1<<INT0);
+ 166:main.c        **** 
+ 167:main.c        ****    TCCR1B |= ((1 << CS12));// | (1 << CS10)); // Set up timer at Fcpu/256 
+ 168:main.c        ****    TCCR0B |= (1 << CS02) | (1 << CS00);// Set up timer at Fcpu/1024
+ 169:main.c        ****    TCCR0A |= (1 << WGM01);//setup compare
+ 170:main.c        **** //OCR0A - Compare Registers...
+ 171:main.c        **** //OCR0B - Compare Registers...
+ 172:main.c        **** 
+ 173:main.c        **** 
+ 174:main.c        **** //   sei(); //  Enable global interrupts 
+ 175:main.c        **** 
+ 176:main.c        **** // Set the PORTD (LEDs) as Output:
+ 177:main.c        ****   LED_DDR= 0xFF;
+ 178:main.c        ****     
+ 179:main.c        ****   // Turn off LEDs
+ 180:main.c        ****   LED_PORT = 0xF0;
+ 181:main.c        **** 
+ 182:main.c        **** 	//Initialize the accelarometer.
+ 183:main.c        **** MMA7660_Init();
+ 184:main.c        **** 
+ 185:main.c        **** //EEPROM Memory Format... 
+ 186:main.c        **** 
+ 187:main.c        **** //First Byte (adress 0) contains the message length.
+ 188:main.c        **** //Second Byte to 200 contain the message.
+ 189:main.c        **** //Remainder: to be determined.
+ 190:main.c        **** 
+ 191:main.c        **** //Fetch Message Length From EEPROM
+ 192:main.c        **** msgLength = eeprom_read_byte((uint8_t*)0); 
+ 193:main.c        **** 
+ 194:main.c        **** //Fetch Message from EEPROM
+ 195:main.c        **** eeprom_read_block((void*)&message, (const void*)1, 200); 
+ 196:main.c        **** 
+ 197:main.c        **** //Fetch delay time from EEPROM
+ 198:main.c        **** STRING_DELAY = eeprom_read_word ((uint16_t*)201);
+ 199:main.c        **** //STRING_DELAY = 2000;
+ 200:main.c        **** 
+ 201:main.c        **** //Add extra chars stored in EEPROM
+ 202:main.c        **** eeprom_read_block((void*)&eepromChars, (const void*)203, 48); 
+ 203:main.c        **** 
+ 204:main.c        **** 
+ 205:main.c        **** 
+ 206:main.c        **** //Fix the Setup messsage end part...
+ 207:main.c        **** 	while(message[stringNumE] != '\n'){
+ 208:main.c        **** 		stringNumE++;
+ 209:main.c        **** 	}
+ 210:main.c        **** 	stringNumE--;
+ 211:main.c        **** 
+ 212:main.c        **** 
+ 213:main.c        **** //Each timer tick = .000032s
+ 214:main.c        **** //Each char therfore consists of approx. 318 ticks. = 6x1.7ms= 
+ 215:main.c        **** 
+ 216:main.c        **** 
+ 217:main.c        **** char lock = 0;
+ 218:main.c        **** char timeLock = 1;
+ 219:main.c        **** char first = 1;
+ 220:main.c        **** char left = 0;
+ 221:main.c        **** //char right = 0;
+ 222:main.c        **** char floatReady = 0;
+ 223:main.c        **** 
+ 224:main.c        **** 
+ 225:main.c        **** unsigned int msgStart = 0;
+ 226:main.c        **** unsigned int cycleCount = 0;
+ 227:main.c        **** unsigned int start = 0;
+ 228:main.c        **** unsigned int charDelay = 0;
+ 229:main.c        **** 
+ 230:main.c        **** 
+ 231:main.c        **** TCNT1 = 0;
+ 232:main.c        **** TCNT0 = 0;
+ 233:main.c        **** 
+ 234:main.c        ****   while(1){
+ 235:main.c        **** 
+ 236:main.c        **** 	//get accelerometer values
+ 237:main.c        **** 	signed char accel = MMA7660_GetVal(YOUT);
+ 238:main.c        **** 
+ 239:main.c        **** 	//find high accel
+ 240:main.c        **** 	if(accel <= -32 && !lock){
+ 241:main.c        **** 
+ 242:main.c        **** 	lock = 1;
+ 243:main.c        **** 	timeLock = 0;
+ 244:main.c        **** 	//count a oscillation cycle
+ 245:main.c        **** 	cycleCount = TCNT1;
+ 246:main.c        **** 	TCNT1 = 0;
+ 247:main.c        **** 	//add offset to message as accel values are skewed slightly towards one direction of movement
+ 248:main.c        **** 	msgStart = cycleCount*3/11;
+ 249:main.c        **** 
+ 250:main.c        **** 
+ 251:main.c        **** //make sure at least one cycle is recorded before message appears
+ 252:main.c        **** 	if(first == 2)
+ 253:main.c        **** 		first = 0;
+ 254:main.c        **** 	if(first == 1)
+ 255:main.c        **** 		first = 2;
+ 256:main.c        **** 
+ 257:main.c        **** 	floatReady = 1;	
+ 258:main.c        **** 	left = 1;
+ 259:main.c        **** 	}
+ 260:main.c        **** /*	else if(!first && accel >= 31 && !lock){
+ 261:main.c        **** 
+ 262:main.c        **** 	lock = 1;
+ 263:main.c        **** 	timeLock = 0;
+ 264:main.c        **** 	
+ 265:main.c        **** 	msgStart = cycleCount/2 + cycleCount/6;
+ 266:main.c        **** 
+ 267:main.c        **** //	floatReady = 1;
+ 268:main.c        **** //	right = 1;
+ 269:main.c        **** 	}
+ 270:main.c        **** */
+ 271:main.c        **** 	else if(first !=1 && lock && accel < 31 && accel > -32){
+ 272:main.c        **** 	lock = 0;
+ 273:main.c        **** 	
+ 274:main.c        **** 	}
+ 275:main.c        **** 	if(first < 1 && TCNT1 > msgStart && floatReady){
+ 276:main.c        **** 		floatReady = 0;
+ 277:main.c        **** 		if(left){
+ 278:main.c        **** 			left = 0;
+ 279:main.c        **** 			direction = 1;
+ 280:main.c        **** 		}
+ 281:main.c        **** /*		else if(right){
+ 282:main.c        **** 			right = 0;
+ 283:main.c        **** 			direction = 0;
+ 284:main.c        **** 		}
+ 285:main.c        **** */
+ 286:main.c        **** 
+ 287:main.c        **** 			startFloat = 1;
+ 288:main.c        **** 			//Calculate start time to float message...
+ 289:main.c        **** 			//1/4 of a cycle is half of a single wave, minus half the time to float the message... 
+ 290:main.c        **** 			//divied charDelay by an additional 4 to compensate for Timer0-1 prescale difference 
+ 291:main.c        **** 			charDelay = (cycleCount/16)/(stringNumE-stringNumS+1);	
+ 292:main.c        **** 			delay = charDelay/6;			
+ 293:main.c        **** 			start = charDelay/2;
+ 294:main.c        **** 			//reset message timer
+ 295:main.c        **** 			TCNT0 = 0;
+ 296:main.c        **** 			//Enable Output Compare A Interrupts on Timer0
+ 297:main.c        **** 			OCR0A = start;
+ 298:main.c        **** 			//enable interrupts on compare for Timer0
+ 299:main.c        **** 			TIMSK0 |= (1 << OCIE0A);
+ 300:main.c        **** 
+ 301:main.c        **** 	}
+ 302:main.c        **** 	
+ 303:main.c        **** 
+ 304:main.c        **** 
+ 305:main.c        ****   }
+ 306:main.c        **** 
+ 307:main.c        ****   return 0;
+ 308:main.c        **** }
+ 309:main.c        **** 
+ 310:main.c        **** //Timer 0 interrupt service routine. 
+ 311:main.c        **** 
+ 312:main.c        **** //This is what grabs the value stored in SRAM for the image, and puts it up on to the LEDs, turns t
+ 313:main.c        **** //moves to the next row.
+ 314:main.c        **** ISR(TIMER0_COMPA_vect)
+ 315:main.c        **** {
+ 103               	,315,.LM0-.LFBB1
+ 104               	.LM0:
+ 105               	.LFBB1:
+ 106 0000 1F92      		push __zero_reg__
+ 107 0002 0F92      		push r0
+ 108 0004 0FB6      		in r0,__SREG__
+ 109 0006 0F92      		push r0
+ 110 0008 1124      		clr __zero_reg__
+ 111 000a 2F93      		push r18
+ 112 000c 3F93      		push r19
+ 113 000e 5F93      		push r21
+ 114 0010 6F93      		push r22
+ 115 0012 7F93      		push r23
+ 116 0014 8F93      		push r24
+ 117 0016 9F93      		push r25
+ 118 0018 AF93      		push r26
+ 119 001a BF93      		push r27
+ 120 001c EF93      		push r30
+ 121 001e FF93      		push r31
+ 122               	/* prologue: Signal */
+ 123               	/* frame size = 0 */
+ 316:main.c        **** 
+ 317:main.c        **** 
+ 318:main.c        **** time += OCR0A;
+ 124               	-.LFBB1
+ 125               	.LM1:
+ 126 0020 8091 0000 		lds r24,time
+ 127 0024 9091 0000 		lds r25,(time)+1
+ 128 0028 27B5      		in r18,71-32
+ 129 002a 820F      		add r24,r18
+ 130 002c 911D      		adc r25,__zero_reg__
+ 131 002e 9093 0000 		sts (time)+1,r25
+ 132 0032 8093 0000 		sts time,r24
+ 319:main.c        **** 
+ 320:main.c        **** //beginning of message
+ 321:main.c        **** if(startFloat == 1){
+ 133               	8,0,321,.LM2-.LFBB1
+ 134               	.LM2:
+ 135 0036 8091 0000 		lds r24,startFloat
+ 136 003a 8130      		cpi r24,lo8(1)
+ 137 003c 01F4      		brne .L2
+ 322:main.c        **** 	startFloat = 2;
+ 138               	bn	68,0,322,.LM3-.LFBB1
+ 139               	.LM3:
+ 140 003e 82E0      		ldi r24,lo8(2)
+ 141 0040 8093 0000 		sts startFloat,r24
+ 323:main.c        **** //reset position of chars
+ 324:main.c        **** 	if(direction == 1){
+ 142               	abn	68,0,324,.LM4-.LFBB1
+ 143               	.LM4:
+ 144 0044 8091 0000 		lds r24,direction
+ 145 0048 8130      		cpi r24,lo8(1)
+ 146 004a 01F0      		breq .+2
+ 147 004c 00C0      		rjmp .L3
+ 325:main.c        **** 		characterPosition = stringNumS;
+ 148               	n	68,0,325,.LM5-.LFBB1
+ 149               	.LM5:
+ 150 004e 8091 0000 		lds r24,stringNumS
+ 151 0052 90E0      		ldi r25,lo8(0)
+ 152 0054 9093 0000 		sts (characterPosition)+1,r25
+ 153 0058 8093 0000 		sts characterPosition,r24
+ 326:main.c        **** 		linePosition = 0;
+ 154               	n	68,0,326,.LM6-.LFBB1
+ 155               	.LM6:
+ 156 005c 1092 0000 		sts (linePosition)+1,__zero_reg__
+ 157 0060 1092 0000 		sts linePosition,__zero_reg__
+ 158 0064 00C0      		rjmp .L3
+ 159               	.L2:
+ 327:main.c        **** 	}
+ 328:main.c        **** /*	else{
+ 329:main.c        **** 		characterPosition = stringNumE;
+ 330:main.c        **** 		linePosition = 5;
+ 331:main.c        **** 	}
+ 332:main.c        **** */
+ 333:main.c        **** //end of message
+ 334:main.c        **** }else if(startFloat == 0){
+ 160               	n	68,0,334,.LM7-.LFBB1
+ 161               	.LM7:
+ 162 0066 8091 0000 		lds r24,startFloat
+ 163 006a 8823      		tst r24
+ 164 006c 01F0      		breq .+2
+ 165 006e 00C0      		rjmp .L3
+ 335:main.c        **** //disable timer intterupt at end
+ 336:main.c        **** 	TIMSK0 &= ~(1 << OCIE0A);
+ 166               	n	68,0,336,.LM8-.LFBB1
+ 167               	.LM8:
+ 168 0070 8091 6E00 		lds r24,110
+ 169 0074 8D7F      		andi r24,lo8(-3)
+ 170 0076 8093 6E00 		sts 110,r24
+ 337:main.c        **** //if next message break...
+ 338:main.c        **** 	if (time >= STRING_DELAY){
+ 171               	bn	68,0,338,.LM9-.LFBB1
+ 172               	.LM9:
+ 173 007a 2091 0000 		lds r18,time
+ 174 007e 3091 0000 		lds r19,(time)+1
+ 175 0082 8091 0000 		lds r24,STRING_DELAY
+ 176 0086 9091 0000 		lds r25,(STRING_DELAY)+1
+ 177 008a 2817      		cp r18,r24
+ 178 008c 3907      		cpc r19,r25
+ 179 008e 00F0      		brlo .L3
+ 339:main.c        **** 		time = 0;
+ 180               	8,0,339,.LM10-.LFBB1
+ 181               	.LM10:
+ 182 0090 1092 0000 		sts (time)+1,__zero_reg__
+ 183 0094 1092 0000 		sts time,__zero_reg__
+ 184 0098 00C0      		rjmp .L4
+ 185               	.L5:
+ 340:main.c        **** //find next message basically, and set begining and end of string markers
+ 341:main.c        **** 		while(message[stringNumS] != '\n'){
+ 342:main.c        **** 			stringNumS++;
+ 186               	n	68,0,342,.LM11-.LFBB1
+ 187               	.LM11:
+ 188 009a 8091 0000 		lds r24,stringNumS
+ 189 009e 8F5F      		subi r24,lo8(-(1))
+ 190 00a0 8093 0000 		sts stringNumS,r24
+ 191               	.L4:
+ 193               	.LM12:
+ 194 00a4 E091 0000 		lds r30,stringNumS
+ 195 00a8 F0E0      		ldi r31,lo8(0)
+ 196 00aa E050      		subi r30,lo8(-(message))
+ 197 00ac F040      		sbci r31,hi8(-(message))
+ 198 00ae 8081      		ld r24,Z
+ 199 00b0 8A30      		cpi r24,lo8(10)
+ 200 00b2 01F4      		brne .L5
+ 343:main.c        **** 		}
+ 344:main.c        **** 		stringNumS++;
+ 201               	4,.LM13-.LFBB1
+ 202               	.LM13:
+ 203 00b4 8091 0000 		lds r24,stringNumS
+ 204 00b8 8F5F      		subi r24,lo8(-(1))
+ 205 00ba 8093 0000 		sts stringNumS,r24
+ 345:main.c        **** 		if(stringNumS >= msgLength){
+ 206               	bn	68,0,345,.LM14-.LFBB1
+ 207               	.LM14:
+ 208 00be 9091 0000 		lds r25,stringNumS
+ 209 00c2 8091 0000 		lds r24,msgLength
+ 210 00c6 9817      		cp r25,r24
+ 211 00c8 00F0      		brlo .L6
+ 346:main.c        **** 			stringNumS = 0;
+ 212               	n	68,0,346,.LM15-.LFBB1
+ 213               	.LM15:
+ 214 00ca 1092 0000 		sts stringNumS,__zero_reg__
+ 347:main.c        **** 			stringNumE = 0;
+ 215               	tabn	68,0,347,.LM16-.LFBB1
+ 216               	.LM16:
+ 217 00ce 1092 0000 		sts stringNumE,__zero_reg__
+ 218 00d2 00C0      		rjmp .L15
+ 219               	.L6:
+ 348:main.c        **** 		}else{
+ 349:main.c        **** 			stringNumE += 2;
+ 220               	bn	68,0,349,.LM17-.LFBB1
+ 221               	.LM17:
+ 222 00d4 8091 0000 		lds r24,stringNumE
+ 223 00d8 8E5F      		subi r24,lo8(-(2))
+ 224 00da 00C0      		rjmp .L16
+ 225               	.L8:
+ 350:main.c        **** 		}
+ 351:main.c        **** 			while(message[stringNumE] != '\n'){
+ 352:main.c        **** 				stringNumE++;
+ 226               	n	68,0,352,.LM18-.LFBB1
+ 227               	.LM18:
+ 228 00dc 8091 0000 		lds r24,stringNumE
+ 229 00e0 8F5F      		subi r24,lo8(-(1))
+ 230               	.L16:
+ 231 00e2 8093 0000 		sts stringNumE,r24
+ 232               	.L15:
+ 234               	.LM19:
+ 235 00e6 E091 0000 		lds r30,stringNumE
+ 236 00ea F0E0      		ldi r31,lo8(0)
+ 237 00ec E050      		subi r30,lo8(-(message))
+ 238 00ee F040      		sbci r31,hi8(-(message))
+ 239 00f0 8081      		ld r24,Z
+ 240 00f2 8A30      		cpi r24,lo8(10)
+ 241 00f4 01F4      		brne .L8
+ 353:main.c        **** 			}
+ 354:main.c        **** 			stringNumE--;
+ 242               	,.LM20-.LFBB1
+ 243               	.LM20:
+ 244 00f6 8091 0000 		lds r24,stringNumE
+ 245 00fa 8150      		subi r24,lo8(-(-1))
+ 246 00fc 8093 0000 		sts stringNumE,r24
+ 247               	.L3:
+ 355:main.c        **** 	}
+ 356:main.c        **** }
+ 357:main.c        **** //toggle the leds
+ 358:main.c        **** if(!LEDToggle){
+ 248               	n	68,0,358,.LM21-.LFBB1
+ 249               	.LM21:
+ 250 0100 8091 0000 		lds r24,LEDToggle
+ 251 0104 8823      		tst r24
+ 252 0106 01F0      		breq .+2
+ 253 0108 00C0      		rjmp .L9
+ 254               	.LBB2:
+ 359:main.c        **** 	unsigned char leds;
+ 360:main.c        **** 	LEDToggle = 1;
+ 255               		68,0,360,.LM22-.LFBB1
+ 256               	.LM22:
+ 257 010a 81E0      		ldi r24,lo8(1)
+ 258 010c 8093 0000 		sts LEDToggle,r24
+ 361:main.c        **** 	unsigned char character = message[characterPosition]-' ';
+ 259               	abn	68,0,361,.LM23-.LFBB1
+ 260               	.LM23:
+ 261 0110 E091 0000 		lds r30,characterPosition
+ 262 0114 F091 0000 		lds r31,(characterPosition)+1
+ 263 0118 E050      		subi r30,lo8(-(message))
+ 264 011a F040      		sbci r31,hi8(-(message))
+ 265 011c 2081      		ld r18,Z
+ 266 011e 2052      		subi r18,lo8(-(-32))
+ 362:main.c        **** 	if(character >= MAXPGMCHAR)
+ 267               	68,0,362,.LM24-.LFBB1
+ 268               	.LM24:
+ 269 0120 2036      		cpi r18,lo8(96)
+ 270 0122 00F0      		brlo .L10
+ 363:main.c        **** 	leds = eepromChars[character-MAXPGMCHAR][linePosition];
+ 271               	abn	68,0,363,.LM25-.LFBB1
+ 272               	.LM25:
+ 273 0124 822F      		mov r24,r18
+ 274 0126 90E0      		ldi r25,lo8(0)
+ 275 0128 8056      		subi r24,lo8(-(-96))
+ 276 012a 9040      		sbci r25,hi8(-(-96))
+ 277 012c 2091 0000 		lds r18,linePosition
+ 278 0130 3091 0000 		lds r19,(linePosition)+1
+ 279 0134 FC01      		movw r30,r24
+ 280 0136 EE0F      		lsl r30
+ 281 0138 FF1F      		rol r31
+ 282 013a E80F      		add r30,r24
+ 283 013c F91F      		adc r31,r25
+ 284 013e EE0F      		lsl r30
+ 285 0140 FF1F      		rol r31
+ 286 0142 E20F      		add r30,r18
+ 287 0144 F31F      		adc r31,r19
+ 288 0146 E050      		subi r30,lo8(-(eepromChars))
+ 289 0148 F040      		sbci r31,hi8(-(eepromChars))
+ 290 014a E081      		ld r30,Z
+ 291 014c 00C0      		rjmp .L11
+ 292               	.L10:
+ 293               	.LBB3:
+ 364:main.c        **** 	else
+ 365:main.c        **** 	leds = (unsigned char)pgm_read_byte(&(characterArray[character][linePosition]));
+ 294               	.LFBB1
+ 295               	.LM26:
+ 296 014e 8091 0000 		lds r24,linePosition
+ 297 0152 9091 0000 		lds r25,(linePosition)+1
+ 298 0156 E6E0      		ldi r30,lo8(6)
+ 299 0158 2E9F      		mul r18,r30
+ 300 015a F001      		movw r30,r0
+ 301 015c 1124      		clr r1
+ 302 015e E80F      		add r30,r24
+ 303 0160 F91F      		adc r31,r25
+ 304 0162 E050      		subi r30,lo8(-(characterArray))
+ 305 0164 F040      		sbci r31,hi8(-(characterArray))
+ 306               	/* #APP */
+ 307               	 ;  365 "main.c" 1
+ 308 0166 E491      		lpm r30, Z
+ 309               		
+ 310               	 ;  0 "" 2
+ 311               	/* #NOAPP */
+ 312               	.L11:
+ 313               	.LBE3:
+ 366:main.c        **** //due to hardware, the top four leds need to be configured to be active LOW...
+ 367:main.c        **** 	leds = ((~leds)&0xF0)|(leds&0x0F);
+ 314               	27-.LFBB1
+ 315               	.LM27:
+ 316 0168 8E2F      		mov r24,r30
+ 317 016a 8095      		com r24
+ 318 016c 807F      		andi r24,lo8(-16)
+ 319 016e EF70      		andi r30,lo8(15)
+ 320 0170 8E2B      		or r24,r30
+ 368:main.c        **** 	LED_PORT =  leds;
+ 321               		68,0,368,.LM28-.LFBB1
+ 322               	.LM28:
+ 323 0172 8BB9      		out 43-32,r24
+ 369:main.c        **** //reset timer
+ 370:main.c        **** 	OCR0A = delay/3;
+ 324               	tabn	68,0,370,.LM29-.LFBB1
+ 325               	.LM29:
+ 326 0174 8091 0000 		lds r24,delay
+ 327 0178 9091 0000 		lds r25,(delay)+1
+ 328 017c 63E0      		ldi r22,lo8(3)
+ 329 017e 70E0      		ldi r23,hi8(3)
+ 330 0180 00D0      		rcall __udivmodhi4
+ 331 0182 67BD      		out 71-32,r22
+ 371:main.c        **** 	if(direction == 1){
+ 332               	68,0,371,.LM30-.LFBB1
+ 333               	.LM30:
+ 334 0184 8091 0000 		lds r24,direction
+ 335 0188 8130      		cpi r24,lo8(1)
+ 336 018a 01F4      		brne .L14
+ 372:main.c        **** 
+ 373:main.c        **** //increment line position, if at end, goto next char, if past, reset float string to be done.
+ 374:main.c        **** 		linePosition++;
+ 337               	bn	68,0,374,.LM31-.LFBB1
+ 338               	.LM31:
+ 339 018c 8091 0000 		lds r24,linePosition
+ 340 0190 9091 0000 		lds r25,(linePosition)+1
+ 341 0194 0196      		adiw r24,1
+ 342 0196 9093 0000 		sts (linePosition)+1,r25
+ 343 019a 8093 0000 		sts linePosition,r24
+ 375:main.c        **** 		if(linePosition == 6){
+ 344               		68,0,375,.LM32-.LFBB1
+ 345               	.LM32:
+ 346 019e 8091 0000 		lds r24,linePosition
+ 347 01a2 9091 0000 		lds r25,(linePosition)+1
+ 348 01a6 0697      		sbiw r24,6
+ 349 01a8 01F4      		brne .L13
+ 376:main.c        **** 			linePosition = 0;
+ 350               	n	68,0,376,.LM33-.LFBB1
+ 351               	.LM33:
+ 352 01aa 1092 0000 		sts (linePosition)+1,__zero_reg__
+ 353 01ae 1092 0000 		sts linePosition,__zero_reg__
+ 377:main.c        **** 			characterPosition++;
+ 354               	abn	68,0,377,.LM34-.LFBB1
+ 355               	.LM34:
+ 356 01b2 8091 0000 		lds r24,characterPosition
+ 357 01b6 9091 0000 		lds r25,(characterPosition)+1
+ 358 01ba 0196      		adiw r24,1
+ 359 01bc 9093 0000 		sts (characterPosition)+1,r25
+ 360 01c0 8093 0000 		sts characterPosition,r24
+ 361               	.L13:
+ 378:main.c        **** 		}
+ 379:main.c        **** 		if(characterPosition > stringNumE){
+ 362               	68,0,379,.LM35-.LFBB1
+ 363               	.LM35:
+ 364 01c4 2091 0000 		lds r18,characterPosition
+ 365 01c8 3091 0000 		lds r19,(characterPosition)+1
+ 366 01cc 8091 0000 		lds r24,stringNumE
+ 367 01d0 90E0      		ldi r25,lo8(0)
+ 368 01d2 8217      		cp r24,r18
+ 369 01d4 9307      		cpc r25,r19
+ 370 01d6 04F4      		brge .L14
+ 380:main.c        **** 			startFloat = 0;
+ 371               	8,0,380,.LM36-.LFBB1
+ 372               	.LM36:
+ 373 01d8 1092 0000 		sts startFloat,__zero_reg__
+ 374 01dc 00C0      		rjmp .L14
+ 375               	.L9:
+ 376               	.LBE2:
+ 381:main.c        **** 		}
+ 382:main.c        **** 
+ 383:main.c        **** 	}
+ 384:main.c        **** /*	else{
+ 385:main.c        **** 		
+ 386:main.c        **** 		linePosition--;
+ 387:main.c        **** 		if(linePosition == -1){
+ 388:main.c        **** 			linePosition = 5;
+ 389:main.c        **** 			characterPosition--;
+ 390:main.c        **** 		}
+ 391:main.c        **** 		if(characterPosition < stringNumS)
+ 392:main.c        **** 			startFloat = 0;
+ 393:main.c        **** 
+ 394:main.c        **** 	}
+ 395:main.c        **** */
+ 396:main.c        **** }
+ 397:main.c        **** //turn leds off and reset timer.
+ 398:main.c        **** else{
+ 399:main.c        **** 	LEDToggle = 0;
+ 377               	n	68,0,399,.LM37-.LFBB1
+ 378               	.LM37:
+ 379 01de 1092 0000 		sts LEDToggle,__zero_reg__
+ 400:main.c        **** 	LED_PORT =  0xF0;
+ 380               	tabn	68,0,400,.LM38-.LFBB1
+ 381               	.LM38:
+ 382 01e2 80EF      		ldi r24,lo8(-16)
+ 383 01e4 8BB9      		out 43-32,r24
+ 401:main.c        **** 	OCR0A = delay*2/3;
+ 384               	abn	68,0,401,.LM39-.LFBB1
+ 385               	.LM39:
+ 386 01e6 8091 0000 		lds r24,delay
+ 387 01ea 9091 0000 		lds r25,(delay)+1
+ 388 01ee 880F      		lsl r24
+ 389 01f0 991F      		rol r25
+ 390 01f2 63E0      		ldi r22,lo8(3)
+ 391 01f4 70E0      		ldi r23,hi8(3)
+ 392 01f6 00D0      		rcall __udivmodhi4
+ 393 01f8 67BD      		out 71-32,r22
+ 394               	.L14:
+ 395               	/* epilogue start */
+ 402:main.c        **** 
+ 403:main.c        **** }
+ 404:main.c        **** 
+ 405:main.c        **** 
+ 406:main.c        ****  
+ 407:main.c        **** }
+ 396               	,407,.LM40-.LFBB1
+ 397               	.LM40:
+ 398 01fa FF91      		pop r31
+ 399 01fc EF91      		pop r30
+ 400 01fe BF91      		pop r27
+ 401 0200 AF91      		pop r26
+ 402 0202 9F91      		pop r25
+ 403 0204 8F91      		pop r24
+ 404 0206 7F91      		pop r23
+ 405 0208 6F91      		pop r22
+ 406 020a 5F91      		pop r21
+ 407 020c 3F91      		pop r19
+ 408 020e 2F91      		pop r18
+ 409 0210 0F90      		pop r0
+ 410 0212 0FBE      		out __SREG__,r0
+ 411 0214 0F90      		pop r0
+ 412 0216 1F90      		pop __zero_reg__
+ 413 0218 1895      		reti
+ 419               	.Lscope1:
+ 420               		.section	.text.main,"ax",@progbits
+ 422               	.global	main
+ 424               	main:
+ 426               	.LM41:
+ 427               	.LFBB2:
+ 428 0000 CF92      		push r12
+ 429 0002 DF92      		push r13
+ 430 0004 EF92      		push r14
+ 431 0006 FF92      		push r15
+ 432 0008 0F93      		push r16
+ 433 000a 1F93      		push r17
+ 434 000c CF93      		push r28
+ 435 000e DF93      		push r29
+ 436               	/* prologue: function */
+ 437               	/* frame size = 0 */
+ 439               	.LM42:
+ 440 0010 8091 8100 		lds r24,129
+ 441 0014 8460      		ori r24,lo8(4)
+ 442 0016 8093 8100 		sts 129,r24
+ 444               	.LM43:
+ 445 001a 2EE0      		ldi r18,lo8(14)
+ 446 001c 88E1      		ldi r24,lo8(24)
+ 447 001e 90E0      		ldi r25,hi8(24)
+ 448               	/* #APP */
+ 449               	 ;  149 "main.c" 1
+ 450 0020 0FB6      		in __tmp_reg__,__SREG__
+ 451 0022 F894      		cli
+ 452 0024 A895      		wdr
+ 453 0026 8093 6000 		sts 96,r24
+ 454 002a 0FBE      		out __SREG__,__tmp_reg__
+ 455 002c 2093 6000 		sts 96,r18
+ 456               		
+ 457               	 ;  0 "" 2
+ 459               	.LM44:
+ 460               	/* #NOAPP */
+ 461 0030 00D0      		rcall usbHardwareInit
+ 463               	.LM45:
+ 464 0032 00D0      		rcall usbInit
+ 466               	.LM46:
+ 467               	/* #APP */
+ 468               	 ;  154 "main.c" 1
+ 469 0034 7894      		sei
+ 470               	 ;  0 "" 2
+ 472               	.LM47:
+ 473               	/* #NOAPP */
+ 474 0036 1092 8500 		sts (132)+1,__zero_reg__
+ 475 003a 1092 8400 		sts 132,__zero_reg__
+ 476               	.L35:
+ 478               	.LM48:
+ 479               	/* #APP */
+ 480               	 ;  157 "main.c" 1
+ 481 003e A895      		wdr
+ 482               	 ;  0 "" 2
+ 484               	.LM49:
+ 485               	/* #NOAPP */
+ 486 0040 00D0      		rcall usbPoll
+ 488               	.LM50:
+ 489 0042 8091 0000 		lds r24,usbDetected
+ 490 0046 8823      		tst r24
+ 491 0048 01F4      		brne .L35
+ 492 004a 8091 8400 		lds r24,132
+ 493 004e 9091 8500 		lds r25,(132)+1
+ 494 0052 865F      		subi r24,lo8(-25098)
+ 495 0054 9D49      		sbci r25,hi8(-25098)
+ 496 0056 00F0      		brlo .L35
+ 498               	.LM51:
+ 499 0058 88E1      		ldi r24,lo8(24)
+ 500               	/* #APP */
+ 501               	 ;  164 "main.c" 1
+ 502 005a 0FB6      		in __tmp_reg__, __SREG__
+ 503 005c F894      		cli
+ 504 005e 8093 6000 		sts 96, r24
+ 505 0062 1092 6000 		sts 96, __zero_reg__
+ 506 0066 0FBE      		out __SREG__,__tmp_reg__
+ 507               		
+ 508               	 ;  0 "" 2
+ 510               	.LM52:
+ 511               	/* #NOAPP */
+ 512 0068 E898      		cbi 61-32,0
+ 514               	.LM53:
+ 515 006a 8091 8100 		lds r24,129
+ 516 006e 8460      		ori r24,lo8(4)
+ 517 0070 8093 8100 		sts 129,r24
+ 519               	.LM54:
+ 520 0074 85B5      		in r24,69-32
+ 521 0076 8560      		ori r24,lo8(5)
+ 522 0078 85BD      		out 69-32,r24
+ 524               	.LM55:
+ 525 007a 84B5      		in r24,68-32
+ 526 007c 8260      		ori r24,lo8(2)
+ 527 007e 84BD      		out 68-32,r24
+ 529               	.LM56:
+ 530 0080 8FEF      		ldi r24,lo8(-1)
+ 531 0082 8AB9      		out 42-32,r24
+ 533               	.LM57:
+ 534 0084 80EF      		ldi r24,lo8(-16)
+ 535 0086 8BB9      		out 43-32,r24
+ 537               	.LM58:
+ 538 0088 00D0      		rcall MMA7660_Init
+ 540               	.LM59:
+ 541 008a 80E0      		ldi r24,lo8(0)
+ 542 008c 90E0      		ldi r25,hi8(0)
+ 543 008e 00D0      		rcall __eerd_byte_m48a
+ 544 0090 8093 0000 		sts msgLength,r24
+ 546               	.LM60:
+ 547 0094 80E0      		ldi r24,lo8(message)
+ 548 0096 90E0      		ldi r25,hi8(message)
+ 549 0098 61E0      		ldi r22,lo8(1)
+ 550 009a 70E0      		ldi r23,hi8(1)
+ 551 009c 48EC      		ldi r20,lo8(200)
+ 552 009e 50E0      		ldi r21,hi8(200)
+ 553 00a0 00D0      		rcall __eerd_block_m48a
+ 555               	.LM61:
+ 556 00a2 89EC      		ldi r24,lo8(201)
+ 557 00a4 90E0      		ldi r25,hi8(201)
+ 558 00a6 00D0      		rcall __eerd_word_m48a
+ 559 00a8 9093 0000 		sts (STRING_DELAY)+1,r25
+ 560 00ac 8093 0000 		sts STRING_DELAY,r24
+ 562               	.LM62:
+ 563 00b0 80E0      		ldi r24,lo8(eepromChars)
+ 564 00b2 90E0      		ldi r25,hi8(eepromChars)
+ 565 00b4 6BEC      		ldi r22,lo8(203)
+ 566 00b6 70E0      		ldi r23,hi8(203)
+ 567 00b8 40E3      		ldi r20,lo8(48)
+ 568 00ba 50E0      		ldi r21,hi8(48)
+ 569 00bc 00D0      		rcall __eerd_block_m48a
+ 570 00be 00C0      		rjmp .L19
+ 571               	.L20:
+ 573               	.LM63:
+ 574 00c0 8091 0000 		lds r24,stringNumE
+ 575 00c4 8F5F      		subi r24,lo8(-(1))
+ 576 00c6 8093 0000 		sts stringNumE,r24
+ 577               	.L19:
+ 579               	.LM64:
+ 580 00ca E091 0000 		lds r30,stringNumE
+ 581 00ce F0E0      		ldi r31,lo8(0)
+ 582 00d0 E050      		subi r30,lo8(-(message))
+ 583 00d2 F040      		sbci r31,hi8(-(message))
+ 584 00d4 8081      		ld r24,Z
+ 585 00d6 8A30      		cpi r24,lo8(10)
+ 586 00d8 01F4      		brne .L20
+ 588               	.LM65:
+ 589 00da 8091 0000 		lds r24,stringNumE
+ 590 00de 8150      		subi r24,lo8(-(-1))
+ 591 00e0 8093 0000 		sts stringNumE,r24
+ 593               	.LM66:
+ 594 00e4 1092 8500 		sts (132)+1,__zero_reg__
+ 595 00e8 1092 8400 		sts 132,__zero_reg__
+ 597               	.LM67:
+ 598 00ec 16BC      		out 70-32,__zero_reg__
+ 599 00ee FF24      		clr r15
+ 600 00f0 11E0      		ldi r17,lo8(1)
+ 601 00f2 EE24      		clr r14
+ 602 00f4 00E0      		ldi r16,lo8(0)
+ 603 00f6 CC24      		clr r12
+ 604 00f8 DD24      		clr r13
+ 605 00fa C0E0      		ldi r28,lo8(0)
+ 606 00fc D0E0      		ldi r29,hi8(0)
+ 607 00fe 00C0      		rjmp .L36
+ 608               	.L28:
+ 609 0100 10E0      		ldi r17,lo8(0)
+ 610               	.L36:
+ 611               	.LBB4:
+ 613               	.LM68:
+ 614 0102 81E0      		ldi r24,lo8(1)
+ 615 0104 00D0      		rcall MMA7660_GetVal
+ 617               	.LM69:
+ 618 0106 813E      		cpi r24,lo8(-31)
+ 619 0108 04F4      		brge .L22
+ 620 010a FF20      		tst r15
+ 621 010c 01F4      		brne .L22
+ 623               	.LM70:
+ 624 010e C091 8400 		lds r28,132
+ 625 0112 D091 8500 		lds r29,(132)+1
+ 627               	.LM71:
+ 628 0116 1092 8500 		sts (132)+1,__zero_reg__
+ 629 011a 1092 8400 		sts 132,__zero_reg__
+ 631               	.LM72:
+ 632 011e CE01      		movw r24,r28
+ 633 0120 880F      		lsl r24
+ 634 0122 991F      		rol r25
+ 635 0124 8C0F      		add r24,r28
+ 636 0126 9D1F      		adc r25,r29
+ 637 0128 6BE0      		ldi r22,lo8(11)
+ 638 012a 70E0      		ldi r23,hi8(11)
+ 639 012c 00D0      		rcall __udivmodhi4
+ 640 012e 6B01      		movw r12,r22
+ 642               	.LM73:
+ 643 0130 1230      		cpi r17,lo8(2)
+ 644 0132 01F4      		brne .L23
+ 645 0134 FF24      		clr r15
+ 646 0136 F394      		inc r15
+ 647 0138 EE24      		clr r14
+ 648 013a E394      		inc r14
+ 649 013c 01E0      		ldi r16,lo8(1)
+ 650 013e 00C0      		rjmp .L24
+ 651               	.L23:
+ 653               	.LM74:
+ 654 0140 1130      		cpi r17,lo8(1)
+ 655 0142 01F0      		breq .L25
+ 656 0144 FF24      		clr r15
+ 657 0146 F394      		inc r15
+ 658 0148 EE24      		clr r14
+ 659 014a E394      		inc r14
+ 660 014c 01E0      		ldi r16,lo8(1)
+ 661 014e 00C0      		rjmp .L26
+ 662               	.L25:
+ 663 0150 FF24      		clr r15
+ 664 0152 F394      		inc r15
+ 665 0154 12E0      		ldi r17,lo8(2)
+ 666 0156 EE24      		clr r14
+ 667 0158 E394      		inc r14
+ 668 015a 01E0      		ldi r16,lo8(1)
+ 669 015c 00C0      		rjmp .L36
+ 670               	.L22:
+ 672               	.LM75:
+ 673 015e 1130      		cpi r17,lo8(1)
+ 674 0160 01F0      		breq .L36
+ 675 0162 FF20      		tst r15
+ 676 0164 01F0      		breq .L26
+ 677 0166 8F31      		cpi r24,lo8(31)
+ 678 0168 04F4      		brge .L27
+ 679 016a 813E      		cpi r24,lo8(-31)
+ 680 016c 04F0      		brlt .L27
+ 681 016e FF24      		clr r15
+ 682 0170 00C0      		rjmp .L26
+ 683               	.L27:
+ 684 0172 FF24      		clr r15
+ 685 0174 F394      		inc r15
+ 686               	.L26:
+ 688               	.LM76:
+ 689 0176 1123      		tst r17
+ 690 0178 01F4      		brne .L36
+ 691               	.L24:
+ 692 017a 8091 8400 		lds r24,132
+ 693 017e 9091 8500 		lds r25,(132)+1
+ 694 0182 C816      		cp r12,r24
+ 695 0184 D906      		cpc r13,r25
+ 696 0186 00F0      		brlo .+2
+ 697 0188 00C0      		rjmp .L28
+ 698 018a 0023      		tst r16
+ 699 018c 01F4      		brne .+2
+ 700 018e 00C0      		rjmp .L28
+ 702               	.LM77:
+ 703 0190 EE20      		tst r14
+ 704 0192 01F0      		breq .L29
+ 706               	.LM78:
+ 707 0194 81E0      		ldi r24,lo8(1)
+ 708 0196 8093 0000 		sts direction,r24
+ 709               	.L29:
+ 711               	.LM79:
+ 712 019a 81E0      		ldi r24,lo8(1)
+ 713 019c 8093 0000 		sts startFloat,r24
+ 715               	.LM80:
+ 716 01a0 6091 0000 		lds r22,stringNumE
+ 717 01a4 8091 0000 		lds r24,stringNumS
+ 718 01a8 70E0      		ldi r23,lo8(0)
+ 719 01aa 6F5F      		subi r22,lo8(-(1))
+ 720 01ac 7F4F      		sbci r23,hi8(-(1))
+ 721 01ae 681B      		sub r22,r24
+ 722 01b0 7109      		sbc r23,__zero_reg__
+ 723 01b2 CE01      		movw r24,r28
+ 724 01b4 E4E0      		ldi r30,4
+ 725 01b6 9695      	1:	lsr r25
+ 726 01b8 8795      		ror r24
+ 727 01ba EA95      		dec r30
+ 728 01bc 01F4      		brne 1b
+ 729 01be 00D0      		rcall __udivmodhi4
+ 730 01c0 9B01      		movw r18,r22
+ 732               	.LM81:
+ 733 01c2 CB01      		movw r24,r22
+ 734 01c4 66E0      		ldi r22,lo8(6)
+ 735 01c6 70E0      		ldi r23,hi8(6)
+ 736 01c8 00D0      		rcall __udivmodhi4
+ 737 01ca 7093 0000 		sts (delay)+1,r23
+ 738 01ce 6093 0000 		sts delay,r22
+ 740               	.LM82:
+ 741 01d2 16BC      		out 70-32,__zero_reg__
+ 743               	.LM83:
+ 744 01d4 3695      		lsr r19
+ 745 01d6 2795      		ror r18
+ 746 01d8 27BD      		out 71-32,r18
+ 748               	.LM84:
+ 749 01da 8091 6E00 		lds r24,110
+ 750 01de 8260      		ori r24,lo8(2)
+ 751 01e0 8093 6E00 		sts 110,r24
+ 752 01e4 10E0      		ldi r17,lo8(0)
+ 753 01e6 EE24      		clr r14
+ 754 01e8 00E0      		ldi r16,lo8(0)
+ 755 01ea 00C0      		rjmp .L36
+ 756               	.LBE4:
+ 766               	.Lscope2:
+ 767               	.global	characterArray
+ 768               		.section	.progmem.data,"a",@progbits
+ 771               	characterArray:
+ 772 0000 00        		.byte	0
+ 773 0001 00        		.byte	0
+ 774 0002 00        		.byte	0
+ 775 0003 00        		.byte	0
+ 776 0004 00        		.byte	0
+ 777 0005 00        		.byte	0
+ 778 0006 00        		.byte	0
+ 779 0007 00        		.byte	0
+ 780 0008 7D        		.byte	125
+ 781 0009 00        		.byte	0
+ 782 000a 00        		.byte	0
+ 783 000b 00        		.byte	0
+ 784 000c 00        		.byte	0
+ 785 000d 70        		.byte	112
+ 786 000e 00        		.byte	0
+ 787 000f 70        		.byte	112
+ 788 0010 00        		.byte	0
+ 789 0011 00        		.byte	0
+ 790 0012 14        		.byte	20
+ 791 0013 7F        		.byte	127
+ 792 0014 14        		.byte	20
+ 793 0015 7F        		.byte	127
+ 794 0016 14        		.byte	20
+ 795 0017 00        		.byte	0
+ 796 0018 12        		.byte	18
+ 797 0019 2A        		.byte	42
+ 798 001a 7F        		.byte	127
+ 799 001b 2A        		.byte	42
+ 800 001c 24        		.byte	36
+ 801 001d 00        		.byte	0
+ 802 001e 12        		.byte	18
+ 803 001f 2A        		.byte	42
+ 804 0020 7F        		.byte	127
+ 805 0021 2A        		.byte	42
+ 806 0022 24        		.byte	36
+ 807 0023 00        		.byte	0
+ 808 0024 36        		.byte	54
+ 809 0025 49        		.byte	73
+ 810 0026 55        		.byte	85
+ 811 0027 22        		.byte	34
+ 812 0028 05        		.byte	5
+ 813 0029 00        		.byte	0
+ 814 002a 00        		.byte	0
+ 815 002b 00        		.byte	0
+ 816 002c 60        		.byte	96
+ 817 002d 00        		.byte	0
+ 818 002e 00        		.byte	0
+ 819 002f 00        		.byte	0
+ 820 0030 00        		.byte	0
+ 821 0031 1C        		.byte	28
+ 822 0032 22        		.byte	34
+ 823 0033 41        		.byte	65
+ 824 0034 00        		.byte	0
+ 825 0035 00        		.byte	0
+ 826 0036 00        		.byte	0
+ 827 0037 41        		.byte	65
+ 828 0038 22        		.byte	34
+ 829 0039 1C        		.byte	28
+ 830 003a 00        		.byte	0
+ 831 003b 00        		.byte	0
+ 832 003c 14        		.byte	20
+ 833 003d 08        		.byte	8
+ 834 003e 3E        		.byte	62
+ 835 003f 08        		.byte	8
+ 836 0040 14        		.byte	20
+ 837 0041 00        		.byte	0
+ 838 0042 08        		.byte	8
+ 839 0043 08        		.byte	8
+ 840 0044 3E        		.byte	62
+ 841 0045 08        		.byte	8
+ 842 0046 08        		.byte	8
+ 843 0047 00        		.byte	0
+ 844 0048 00        		.byte	0
+ 845 0049 00        		.byte	0
+ 846 004a 05        		.byte	5
+ 847 004b 06        		.byte	6
+ 848 004c 00        		.byte	0
+ 849 004d 00        		.byte	0
+ 850 004e 00        		.byte	0
+ 851 004f 00        		.byte	0
+ 852 0050 05        		.byte	5
+ 853 0051 06        		.byte	6
+ 854 0052 00        		.byte	0
+ 855 0053 00        		.byte	0
+ 856 0054 00        		.byte	0
+ 857 0055 00        		.byte	0
+ 858 0056 03        		.byte	3
+ 859 0057 03        		.byte	3
+ 860 0058 00        		.byte	0
+ 861 0059 00        		.byte	0
+ 862 005a 02        		.byte	2
+ 863 005b 04        		.byte	4
+ 864 005c 08        		.byte	8
+ 865 005d 10        		.byte	16
+ 866 005e 20        		.byte	32
+ 867 005f 00        		.byte	0
+ 868 0060 3E        		.byte	62
+ 869 0061 45        		.byte	69
+ 870 0062 49        		.byte	73
+ 871 0063 51        		.byte	81
+ 872 0064 3E        		.byte	62
+ 873 0065 00        		.byte	0
+ 874 0066 00        		.byte	0
+ 875 0067 21        		.byte	33
+ 876 0068 7F        		.byte	127
+ 877 0069 01        		.byte	1
+ 878 006a 00        		.byte	0
+ 879 006b 00        		.byte	0
+ 880 006c 21        		.byte	33
+ 881 006d 43        		.byte	67
+ 882 006e 45        		.byte	69
+ 883 006f 49        		.byte	73
+ 884 0070 31        		.byte	49
+ 885 0071 00        		.byte	0
+ 886 0072 22        		.byte	34
+ 887 0073 41        		.byte	65
+ 888 0074 49        		.byte	73
+ 889 0075 49        		.byte	73
+ 890 0076 36        		.byte	54
+ 891 0077 00        		.byte	0
+ 892 0078 0C        		.byte	12
+ 893 0079 14        		.byte	20
+ 894 007a 24        		.byte	36
+ 895 007b 7F        		.byte	127
+ 896 007c 04        		.byte	4
+ 897 007d 00        		.byte	0
+ 898 007e 72        		.byte	114
+ 899 007f 51        		.byte	81
+ 900 0080 51        		.byte	81
+ 901 0081 51        		.byte	81
+ 902 0082 4E        		.byte	78
+ 903 0083 00        		.byte	0
+ 904 0084 1E        		.byte	30
+ 905 0085 29        		.byte	41
+ 906 0086 49        		.byte	73
+ 907 0087 49        		.byte	73
+ 908 0088 06        		.byte	6
+ 909 0089 00        		.byte	0
+ 910 008a 60        		.byte	96
+ 911 008b 47        		.byte	71
+ 912 008c 48        		.byte	72
+ 913 008d 50        		.byte	80
+ 914 008e 60        		.byte	96
+ 915 008f 00        		.byte	0
+ 916 0090 36        		.byte	54
+ 917 0091 49        		.byte	73
+ 918 0092 49        		.byte	73
+ 919 0093 49        		.byte	73
+ 920 0094 36        		.byte	54
+ 921 0095 00        		.byte	0
+ 922 0096 30        		.byte	48
+ 923 0097 49        		.byte	73
+ 924 0098 49        		.byte	73
+ 925 0099 4A        		.byte	74
+ 926 009a 3C        		.byte	60
+ 927 009b 00        		.byte	0
+ 928 009c 00        		.byte	0
+ 929 009d 00        		.byte	0
+ 930 009e 36        		.byte	54
+ 931 009f 36        		.byte	54
+ 932 00a0 00        		.byte	0
+ 933 00a1 00        		.byte	0
+ 934 00a2 00        		.byte	0
+ 935 00a3 00        		.byte	0
+ 936 00a4 35        		.byte	53
+ 937 00a5 36        		.byte	54
+ 938 00a6 00        		.byte	0
+ 939 00a7 00        		.byte	0
+ 940 00a8 08        		.byte	8
+ 941 00a9 14        		.byte	20
+ 942 00aa 22        		.byte	34
+ 943 00ab 41        		.byte	65
+ 944 00ac 00        		.byte	0
+ 945 00ad 00        		.byte	0
+ 946 00ae 14        		.byte	20
+ 947 00af 14        		.byte	20
+ 948 00b0 14        		.byte	20
+ 949 00b1 14        		.byte	20
+ 950 00b2 14        		.byte	20
+ 951 00b3 00        		.byte	0
+ 952 00b4 00        		.byte	0
+ 953 00b5 41        		.byte	65
+ 954 00b6 22        		.byte	34
+ 955 00b7 14        		.byte	20
+ 956 00b8 08        		.byte	8
+ 957 00b9 00        		.byte	0
+ 958 00ba 20        		.byte	32
+ 959 00bb 40        		.byte	64
+ 960 00bc 45        		.byte	69
+ 961 00bd 48        		.byte	72
+ 962 00be 30        		.byte	48
+ 963 00bf 00        		.byte	0
+ 964 00c0 26        		.byte	38
+ 965 00c1 49        		.byte	73
+ 966 00c2 4F        		.byte	79
+ 967 00c3 41        		.byte	65
+ 968 00c4 3E        		.byte	62
+ 969 00c5 00        		.byte	0
+ 970 00c6 3F        		.byte	63
+ 971 00c7 44        		.byte	68
+ 972 00c8 44        		.byte	68
+ 973 00c9 44        		.byte	68
+ 974 00ca 3F        		.byte	63
+ 975 00cb 00        		.byte	0
+ 976 00cc 7F        		.byte	127
+ 977 00cd 49        		.byte	73
+ 978 00ce 49        		.byte	73
+ 979 00cf 49        		.byte	73
+ 980 00d0 36        		.byte	54
+ 981 00d1 00        		.byte	0
+ 982 00d2 3E        		.byte	62
+ 983 00d3 41        		.byte	65
+ 984 00d4 41        		.byte	65
+ 985 00d5 41        		.byte	65
+ 986 00d6 22        		.byte	34
+ 987 00d7 00        		.byte	0
+ 988 00d8 7F        		.byte	127
+ 989 00d9 41        		.byte	65
+ 990 00da 41        		.byte	65
+ 991 00db 41        		.byte	65
+ 992 00dc 3E        		.byte	62
+ 993 00dd 00        		.byte	0
+ 994 00de 7F        		.byte	127
+ 995 00df 49        		.byte	73
+ 996 00e0 49        		.byte	73
+ 997 00e1 49        		.byte	73
+ 998 00e2 41        		.byte	65
+ 999 00e3 00        		.byte	0
+ 1000 00e4 7F        		.byte	127
+ 1001 00e5 48        		.byte	72
+ 1002 00e6 48        		.byte	72
+ 1003 00e7 48        		.byte	72
+ 1004 00e8 40        		.byte	64
+ 1005 00e9 00        		.byte	0
+ 1006 00ea 3E        		.byte	62
+ 1007 00eb 41        		.byte	65
+ 1008 00ec 41        		.byte	65
+ 1009 00ed 49        		.byte	73
+ 1010 00ee 2F        		.byte	47
+ 1011 00ef 00        		.byte	0
+ 1012 00f0 7F        		.byte	127
+ 1013 00f1 08        		.byte	8
+ 1014 00f2 08        		.byte	8
+ 1015 00f3 08        		.byte	8
+ 1016 00f4 7F        		.byte	127
+ 1017 00f5 00        		.byte	0
+ 1018 00f6 00        		.byte	0
+ 1019 00f7 41        		.byte	65
+ 1020 00f8 7F        		.byte	127
+ 1021 00f9 41        		.byte	65
+ 1022 00fa 00        		.byte	0
+ 1023 00fb 00        		.byte	0
+ 1024 00fc 02        		.byte	2
+ 1025 00fd 41        		.byte	65
+ 1026 00fe 41        		.byte	65
+ 1027 00ff 7E        		.byte	126
+ 1028 0100 40        		.byte	64
+ 1029 0101 00        		.byte	0
+ 1030 0102 7F        		.byte	127
+ 1031 0103 08        		.byte	8
+ 1032 0104 14        		.byte	20
+ 1033 0105 22        		.byte	34
+ 1034 0106 41        		.byte	65
+ 1035 0107 00        		.byte	0
+ 1036 0108 7F        		.byte	127
+ 1037 0109 01        		.byte	1
+ 1038 010a 01        		.byte	1
+ 1039 010b 01        		.byte	1
+ 1040 010c 01        		.byte	1
+ 1041 010d 00        		.byte	0
+ 1042 010e 7F        		.byte	127
+ 1043 010f 20        		.byte	32
+ 1044 0110 18        		.byte	24
+ 1045 0111 20        		.byte	32
+ 1046 0112 7F        		.byte	127
+ 1047 0113 00        		.byte	0
+ 1048 0114 7F        		.byte	127
+ 1049 0115 10        		.byte	16
+ 1050 0116 08        		.byte	8
+ 1051 0117 04        		.byte	4
+ 1052 0118 7F        		.byte	127
+ 1053 0119 00        		.byte	0
+ 1054 011a 3E        		.byte	62
+ 1055 011b 41        		.byte	65
+ 1056 011c 41        		.byte	65
+ 1057 011d 41        		.byte	65
+ 1058 011e 3E        		.byte	62
+ 1059 011f 00        		.byte	0
+ 1060 0120 7F        		.byte	127
+ 1061 0121 48        		.byte	72
+ 1062 0122 48        		.byte	72
+ 1063 0123 48        		.byte	72
+ 1064 0124 30        		.byte	48
+ 1065 0125 00        		.byte	0
+ 1066 0126 3E        		.byte	62
+ 1067 0127 41        		.byte	65
+ 1068 0128 45        		.byte	69
+ 1069 0129 42        		.byte	66
+ 1070 012a 3D        		.byte	61
+ 1071 012b 00        		.byte	0
+ 1072 012c 7F        		.byte	127
+ 1073 012d 48        		.byte	72
+ 1074 012e 4C        		.byte	76
+ 1075 012f 4A        		.byte	74
+ 1076 0130 31        		.byte	49
+ 1077 0131 00        		.byte	0
+ 1078 0132 32        		.byte	50
+ 1079 0133 49        		.byte	73
+ 1080 0134 49        		.byte	73
+ 1081 0135 49        		.byte	73
+ 1082 0136 26        		.byte	38
+ 1083 0137 00        		.byte	0
+ 1084 0138 40        		.byte	64
+ 1085 0139 40        		.byte	64
+ 1086 013a 7F        		.byte	127
+ 1087 013b 40        		.byte	64
+ 1088 013c 40        		.byte	64
+ 1089 013d 00        		.byte	0
+ 1090 013e 7E        		.byte	126
+ 1091 013f 01        		.byte	1
+ 1092 0140 01        		.byte	1
+ 1093 0141 01        		.byte	1
+ 1094 0142 7E        		.byte	126
+ 1095 0143 00        		.byte	0
+ 1096 0144 7C        		.byte	124
+ 1097 0145 02        		.byte	2
+ 1098 0146 01        		.byte	1
+ 1099 0147 02        		.byte	2
+ 1100 0148 7C        		.byte	124
+ 1101 0149 00        		.byte	0
+ 1102 014a 7E        		.byte	126
+ 1103 014b 01        		.byte	1
+ 1104 014c 0E        		.byte	14
+ 1105 014d 01        		.byte	1
+ 1106 014e 7E        		.byte	126
+ 1107 014f 00        		.byte	0
+ 1108 0150 63        		.byte	99
+ 1109 0151 14        		.byte	20
+ 1110 0152 08        		.byte	8
+ 1111 0153 14        		.byte	20
+ 1112 0154 63        		.byte	99
+ 1113 0155 00        		.byte	0
+ 1114 0156 70        		.byte	112
+ 1115 0157 08        		.byte	8
+ 1116 0158 07        		.byte	7
+ 1117 0159 08        		.byte	8
+ 1118 015a 70        		.byte	112
+ 1119 015b 00        		.byte	0
+ 1120 015c 43        		.byte	67
+ 1121 015d 45        		.byte	69
+ 1122 015e 49        		.byte	73
+ 1123 015f 51        		.byte	81
+ 1124 0160 61        		.byte	97
+ 1125 0161 00        		.byte	0
+ 1126 0162 00        		.byte	0
+ 1127 0163 7F        		.byte	127
+ 1128 0164 41        		.byte	65
+ 1129 0165 41        		.byte	65
+ 1130 0166 00        		.byte	0
+ 1131 0167 00        		.byte	0
+ 1132 0168 20        		.byte	32
+ 1133 0169 10        		.byte	16
+ 1134 016a 08        		.byte	8
+ 1135 016b 04        		.byte	4
+ 1136 016c 02        		.byte	2
+ 1137 016d 00        		.byte	0
+ 1138 016e 00        		.byte	0
+ 1139 016f 41        		.byte	65
+ 1140 0170 41        		.byte	65
+ 1141 0171 7F        		.byte	127
+ 1142 0172 00        		.byte	0
+ 1143 0173 00        		.byte	0
+ 1144 0174 10        		.byte	16
+ 1145 0175 20        		.byte	32
+ 1146 0176 40        		.byte	64
+ 1147 0177 20        		.byte	32
+ 1148 0178 10        		.byte	16
+ 1149 0179 00        		.byte	0
+ 1150 017a 01        		.byte	1
+ 1151 017b 01        		.byte	1
+ 1152 017c 01        		.byte	1
+ 1153 017d 01        		.byte	1
+ 1154 017e 01        		.byte	1
+ 1155 017f 00        		.byte	0
+ 1156 0180 00        		.byte	0
+ 1157 0181 40        		.byte	64
+ 1158 0182 20        		.byte	32
+ 1159 0183 10        		.byte	16
+ 1160 0184 00        		.byte	0
+ 1161 0185 00        		.byte	0
+ 1162 0186 02        		.byte	2
+ 1163 0187 15        		.byte	21
+ 1164 0188 15        		.byte	21
+ 1165 0189 15        		.byte	21
+ 1166 018a 0F        		.byte	15
+ 1167 018b 00        		.byte	0
+ 1168 018c 7F        		.byte	127
+ 1169 018d 09        		.byte	9
+ 1170 018e 11        		.byte	17
+ 1171 018f 11        		.byte	17
+ 1172 0190 0E        		.byte	14
+ 1173 0191 00        		.byte	0
+ 1174 0192 0E        		.byte	14
+ 1175 0193 11        		.byte	17
+ 1176 0194 11        		.byte	17
+ 1177 0195 11        		.byte	17
+ 1178 0196 02        		.byte	2
+ 1179 0197 00        		.byte	0
+ 1180 0198 0E        		.byte	14
+ 1181 0199 11        		.byte	17
+ 1182 019a 11        		.byte	17
+ 1183 019b 09        		.byte	9
+ 1184 019c 7F        		.byte	127
+ 1185 019d 00        		.byte	0
+ 1186 019e 0E        		.byte	14
+ 1187 019f 15        		.byte	21
+ 1188 01a0 15        		.byte	21
+ 1189 01a1 15        		.byte	21
+ 1190 01a2 0C        		.byte	12
+ 1191 01a3 00        		.byte	0
+ 1192 01a4 08        		.byte	8
+ 1193 01a5 3F        		.byte	63
+ 1194 01a6 48        		.byte	72
+ 1195 01a7 40        		.byte	64
+ 1196 01a8 20        		.byte	32
+ 1197 01a9 00        		.byte	0
+ 1198 01aa 08        		.byte	8
+ 1199 01ab 15        		.byte	21
+ 1200 01ac 15        		.byte	21
+ 1201 01ad 15        		.byte	21
+ 1202 01ae 1E        		.byte	30
+ 1203 01af 00        		.byte	0
+ 1204 01b0 7F        		.byte	127
+ 1205 01b1 08        		.byte	8
+ 1206 01b2 10        		.byte	16
+ 1207 01b3 10        		.byte	16
+ 1208 01b4 0F        		.byte	15
+ 1209 01b5 00        		.byte	0
+ 1210 01b6 00        		.byte	0
+ 1211 01b7 09        		.byte	9
+ 1212 01b8 5F        		.byte	95
+ 1213 01b9 01        		.byte	1
+ 1214 01ba 00        		.byte	0
+ 1215 01bb 00        		.byte	0
+ 1216 01bc 00        		.byte	0
+ 1217 01bd 02        		.byte	2
+ 1218 01be 01        		.byte	1
+ 1219 01bf 11        		.byte	17
+ 1220 01c0 5E        		.byte	94
+ 1221 01c1 00        		.byte	0
+ 1222 01c2 00        		.byte	0
+ 1223 01c3 7F        		.byte	127
+ 1224 01c4 04        		.byte	4
+ 1225 01c5 0A        		.byte	10
+ 1226 01c6 11        		.byte	17
+ 1227 01c7 00        		.byte	0
+ 1228 01c8 00        		.byte	0
+ 1229 01c9 41        		.byte	65
+ 1230 01ca 7F        		.byte	127
+ 1231 01cb 01        		.byte	1
+ 1232 01cc 00        		.byte	0
+ 1233 01cd 00        		.byte	0
+ 1234 01ce 1F        		.byte	31
+ 1235 01cf 10        		.byte	16
+ 1236 01d0 0F        		.byte	15
+ 1237 01d1 10        		.byte	16
+ 1238 01d2 0F        		.byte	15
+ 1239 01d3 00        		.byte	0
+ 1240 01d4 1F        		.byte	31
+ 1241 01d5 08        		.byte	8
+ 1242 01d6 10        		.byte	16
+ 1243 01d7 10        		.byte	16
+ 1244 01d8 0F        		.byte	15
+ 1245 01d9 00        		.byte	0
+ 1246 01da 0E        		.byte	14
+ 1247 01db 11        		.byte	17
+ 1248 01dc 11        		.byte	17
+ 1249 01dd 11        		.byte	17
+ 1250 01de 0E        		.byte	14
+ 1251 01df 00        		.byte	0
+ 1252 01e0 1F        		.byte	31
+ 1253 01e1 14        		.byte	20
+ 1254 01e2 14        		.byte	20
+ 1255 01e3 14        		.byte	20
+ 1256 01e4 08        		.byte	8
+ 1257 01e5 00        		.byte	0
+ 1258 01e6 08        		.byte	8
+ 1259 01e7 14        		.byte	20
+ 1260 01e8 14        		.byte	20
+ 1261 01e9 0C        		.byte	12
+ 1262 01ea 1F        		.byte	31
+ 1263 01eb 00        		.byte	0
+ 1264 01ec 1F        		.byte	31
+ 1265 01ed 08        		.byte	8
+ 1266 01ee 10        		.byte	16
+ 1267 01ef 10        		.byte	16
+ 1268 01f0 08        		.byte	8
+ 1269 01f1 00        		.byte	0
+ 1270 01f2 09        		.byte	9
+ 1271 01f3 15        		.byte	21
+ 1272 01f4 15        		.byte	21
+ 1273 01f5 15        		.byte	21
+ 1274 01f6 02        		.byte	2
+ 1275 01f7 00        		.byte	0
+ 1276 01f8 10        		.byte	16
+ 1277 01f9 7E        		.byte	126
+ 1278 01fa 11        		.byte	17
+ 1279 01fb 01        		.byte	1
+ 1280 01fc 02        		.byte	2
+ 1281 01fd 00        		.byte	0
+ 1282 01fe 1E        		.byte	30
+ 1283 01ff 01        		.byte	1
+ 1284 0200 01        		.byte	1
+ 1285 0201 02        		.byte	2
+ 1286 0202 1F        		.byte	31
+ 1287 0203 00        		.byte	0
+ 1288 0204 1C        		.byte	28
+ 1289 0205 02        		.byte	2
+ 1290 0206 01        		.byte	1
+ 1291 0207 02        		.byte	2
+ 1292 0208 1C        		.byte	28
+ 1293 0209 00        		.byte	0
+ 1294 020a 1E        		.byte	30
+ 1295 020b 01        		.byte	1
+ 1296 020c 06        		.byte	6
+ 1297 020d 01        		.byte	1
+ 1298 020e 1E        		.byte	30
+ 1299 020f 00        		.byte	0
+ 1300 0210 11        		.byte	17
+ 1301 0211 0A        		.byte	10
+ 1302 0212 04        		.byte	4
+ 1303 0213 0A        		.byte	10
+ 1304 0214 11        		.byte	17
+ 1305 0215 00        		.byte	0
+ 1306 0216 18        		.byte	24
+ 1307 0217 05        		.byte	5
+ 1308 0218 05        		.byte	5
+ 1309 0219 05        		.byte	5
+ 1310 021a 1E        		.byte	30
+ 1311 021b 00        		.byte	0
+ 1312 021c 11        		.byte	17
+ 1313 021d 13        		.byte	19
+ 1314 021e 15        		.byte	21
+ 1315 021f 19        		.byte	25
+ 1316 0220 11        		.byte	17
+ 1317 0221 00        		.byte	0
+ 1318 0222 00        		.byte	0
+ 1319 0223 08        		.byte	8
+ 1320 0224 36        		.byte	54
+ 1321 0225 41        		.byte	65
+ 1322 0226 00        		.byte	0
+ 1323 0227 00        		.byte	0
+ 1324 0228 00        		.byte	0
+ 1325 0229 00        		.byte	0
+ 1326 022a 7F        		.byte	127
+ 1327 022b 00        		.byte	0
+ 1328 022c 00        		.byte	0
+ 1329 022d 00        		.byte	0
+ 1330 022e 00        		.byte	0
+ 1331 022f 41        		.byte	65
+ 1332 0230 36        		.byte	54
+ 1333 0231 08        		.byte	8
+ 1334 0232 00        		.byte	0
+ 1335 0233 00        		.byte	0
+ 1336 0234 04        		.byte	4
+ 1337 0235 08        		.byte	8
+ 1338 0236 08        		.byte	8
+ 1339 0237 04        		.byte	4
+ 1340 0238 08        		.byte	8
+ 1341 0239 00        		.byte	0
+ 1342 023a 04        		.byte	4
+ 1343 023b 32        		.byte	50
+ 1344 023c 02        		.byte	2
+ 1345 023d 32        		.byte	50
+ 1346 023e 04        		.byte	4
+ 1347 023f 00        		.byte	0
+ 1348               	.global	characterPosition
+ 1349               	.global	characterPosition
+ 1350               		.section .bss
+ 1353               	characterPosition:
+ 1354 0000 0000      		.skip 2,0
+ 1355               	.global	linePosition
+ 1356               	.global	linePosition
+ 1359               	linePosition:
+ 1360 0002 0000      		.skip 2,0
+ 1361               	.global	LEDToggle
+ 1362               	.global	LEDToggle
+ 1365               	LEDToggle:
+ 1366 0004 00        		.skip 1,0
+ 1367               	.global	delay
+ 1368               	.global	delay
+ 1371               	delay:
+ 1372 0005 0000      		.skip 2,0
+ 1373               	.global	startFloat
+ 1374               	.global	startFloat
+ 1377               	startFloat:
+ 1378 0007 00        		.skip 1,0
+ 1379               	.global	direction
+ 1380               	.global	direction
+ 1383               	direction:
+ 1384 0008 00        		.skip 1,0
+ 1385               	.global	time
+ 1386               	.global	time
+ 1389               	time:
+ 1390 0009 0000      		.skip 2,0
+ 1391               	.global	stringNumS
+ 1392               	.global	stringNumS
+ 1395               	stringNumS:
+ 1396 000b 00        		.skip 1,0
+ 1397               	.global	stringNumE
+ 1398               	.global	stringNumE
+ 1401               	stringNumE:
+ 1402 000c 00        		.skip 1,0
+ 1403               		.comm usbDetected,1,1
+ 1404               		.comm eepromChars,48,1
+ 1405               		.comm message,200,1
+ 1406               		.comm msgLength,1,1
+ 1407               		.comm STRING_DELAY,2,1
+ 1423               		.text
+ 1425               	.Letext0:
+ 1426               	.global __do_clear_bss
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:2      *ABS*:0000003f __SREG__
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:3      *ABS*:0000003e __SP_H__
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:4      *ABS*:0000003d __SP_L__
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:5      *ABS*:00000034 __CCP__
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:6      *ABS*:00000000 __tmp_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:7      *ABS*:00000001 __zero_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:102    .text.__vector_14:00000000 __vector_14
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1389   .bss:00000009 time
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1377   .bss:00000007 startFloat
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1383   .bss:00000008 direction
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1395   .bss:0000000b stringNumS
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1353   .bss:00000000 characterPosition
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1359   .bss:00000002 linePosition
+                            *COM*:00000002 STRING_DELAY
+                            *COM*:000000c8 message
+                            *COM*:00000001 msgLength
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1401   .bss:0000000c stringNumE
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1365   .bss:00000004 LEDToggle
+                            *COM*:00000030 eepromChars
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:771    .progmem.data:00000000 characterArray
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:1371   .bss:00000005 delay
+C:\Users\Ryan\AppData\Local\Temp/ccszLCsQ.s:424    .text.main:00000000 main
+                            *COM*:00000001 usbDetected
+
+UNDEFINED SYMBOLS
+__udivmodhi4
+usbHardwareInit
+usbInit
+usbPoll
+MMA7660_Init
+__eerd_byte_m48a
+__eerd_block_m48a
+__eerd_word_m48a
+MMA7660_GetVal
+__do_clear_bss

@@ -1,0 +1,291 @@
+   1               		.file	"mma7660.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+  68               		.section	.text.Read_MMA7660,"ax",@progbits
+  71               	.global	Read_MMA7660
+  73               	Read_MMA7660:
+   1:mma7660.c     **** #include <avr/io.h>
+   2:mma7660.c     **** #include "mma7660.h"
+   3:mma7660.c     **** 
+   4:mma7660.c     **** void Write_MMA7660(unsigned char reg_addr,unsigned char data)
+   5:mma7660.c     **** {
+   6:mma7660.c     ****    // Start the I2C Write Transmission
+   7:mma7660.c     ****    i2c_start(MMA7660_ADDR,TW_WRITE);
+   8:mma7660.c     **** 
+   9:mma7660.c     ****    // Sending the Register Address
+  10:mma7660.c     ****    i2c_write(reg_addr);
+  11:mma7660.c     **** 
+  12:mma7660.c     ****    // Write data to MCP23008 Register
+  13:mma7660.c     ****    i2c_write(data);
+  14:mma7660.c     **** 
+  15:mma7660.c     ****    // Stop I2C Transmission
+  16:mma7660.c     ****    i2c_stop();
+  17:mma7660.c     **** }
+  18:mma7660.c     **** 
+  19:mma7660.c     **** unsigned char Read_MMA7660(unsigned char reg_addr)
+  20:mma7660.c     **** {
+  74               	push __tmp_reg__
+  75               		in r28,__SP_L__
+  76               		in r29,__SP_H__
+  77 0000 1F93      	/* prologue: function */
+  78 0002 DF93      	/* frame size = 1 */
+  79 0004 CF93      		mov r17,r24
+  81 0008 CDB7      	.LM1:
+  82 000a DEB7      		ldi r24,lo8(152)
+  83               		ldi r25,hi8(152)
+  84               		ldi r22,lo8(0)
+  85 000c 182F      		rcall i2c_start
+  21:mma7660.c     ****   i2c_stop();
+  22:mma7660.c     **** }
+  23:mma7660.c     **** 
+  24:mma7660.c     **** unsigned char Read_MMA7660(unsigned char reg_addr)
+  86               	eg__
+  87               		in r28,__SP_L__
+  88 000e 88E9      		in r29,__SP_H__
+  89 0010 90E0      	/* prologue: function */
+  90 0012 60E0      	/* frame size = 1 */
+  91 0014 00D0      		mov r17,r24
+  25:mma7660.c     **** n
+  26:mma7660.c     ****    i2c_stop();
+  27:mma7660.c     **** }
+  92               	@function
+  93               	Read_MMA7660:
+  95 0018 00D0      	.LM0:
+  28:mma7660.c     **** gister
+  29:mma7660.c     ****    i2c_write(data);
+  30:mma7660.c     **** 
+  31:mma7660.c     ****    // Stop I2C Transmission
+  32:mma7660.c     ****    i2c_stop();
+  33:mma7660.c     **** }
+  96               	B1:
+  97               		push r17
+  98 001a 88E9      		push r29
+  99 001c 90E0      		push r28
+ 100 001e 61E0      		push __tmp_reg__
+ 101 0020 00D0      		in r28,__SP_L__
+  34:mma7660.c     **** gister
+  35:mma7660.c     ****    i2c_write(data);
+ 102               	9,__SP_H__
+ 103               	/* prologue: function */
+ 104 0022 CE01      	/* frame size = 1 */
+ 105 0024 0196      		mov r17,r24
+ 107 0028 00D0      	.LM1:
+  36:mma7660.c     **** _write(reg_addr);
+  37:mma7660.c     **** 
+  38:mma7660.c     ****    // Write data to MCP23008 Register
+ 108               	,20,.LM0-.LFBB1
+ 109               	.LM0:
+ 110 002a 00D0      	.LFBB1:
+  39:mma7660.c     **** gister Address
+  40:mma7660.c     ****    i2c_write(reg_addr);
+  41:mma7660.c     **** 
+ 111               	sh r17
+ 112               		push r29
+ 113 002c 8981      		push r28
+ 114               		push __tmp_reg__
+ 115 002e 0F90      		in r28,__SP_L__
+ 116 0030 CF91      		in r29,__SP_H__
+ 117 0032 DF91      	/* prologue: function */
+ 118 0034 1F91      	/* frame size = 1 */
+ 119 0036 0895      		mov r17,r24
+ 121               	.LM1:
+ 122               		ldi r24,lo8(152)
+ 123               		ldi r25,hi8(152)
+ 124               		ldi r22,lo8(0)
+ 125               		rcall i2c_start
+ 127               	.LM2:
+ 128               		mov r24,r17
+ 129               		rcall i2c_write
+  42:mma7660.c     **** 0_ADDR,TW_WRITE);
+  43:mma7660.c     **** 
+  44:mma7660.c     ****    // Sending the Register Address
+  45:mma7660.c     ****    i2c_write(reg_addr);
+  46:mma7660.c     **** 
+  47:mma7660.c     ****    // Write data to MCP23008 Register
+  48:mma7660.c     ****    i2c_write(data);
+  49:mma7660.c     **** 
+  50:mma7660.c     ****    // Stop I2C Transmission
+  51:mma7660.c     ****    i2c_stop();
+  52:mma7660.c     **** }
+  53:mma7660.c     **** 
+  54:mma7660.c     **** unsigned char Read_MMA7660(unsigned char reg_addr)
+  55:mma7660.c     **** {
+  56:mma7660.c     ****    char data;
+  57:mma7660.c     **** 
+  58:mma7660.c     ****    // Start the I2C Write Transmission
+  59:mma7660.c     ****    i2c_start(MMA7660_ADDR,TW_WRITE);
+  60:mma7660.c     **** 
+  61:mma7660.c     ****    // Read data from MCP23008 Register Address
+  62:mma7660.c     ****    i2c_write(reg_addr);
+  63:mma7660.c     **** 
+  64:mma7660.c     ****    // Stop I2C Transmission
+  65:mma7660.c     ****   //i2c_stop();
+  66:mma7660.c     **** 
+  67:mma7660.c     ****    // Re-Start the I2C Read Transmission
+  68:mma7660.c     ****    i2c_start(MMA7660_ADDR,TW_READ);
+  69:mma7660.c     **** 
+  70:mma7660.c     ****    i2c_read(&data,NACK);
+  71:mma7660.c     **** 
+  72:mma7660.c     ****    // Stop I2C Transmission
+  73:mma7660.c     ****    i2c_stop();
+  74:mma7660.c     **** 
+  75:mma7660.c     ****    return data;
+  76:mma7660.c     **** }
+  77:mma7660.c     **** 
+ 130               	3-.LFBB1
+ 131               	.LM3:
+ 132               		ldi r24,lo8(152)
+ 133               		ldi r25,hi8(152)
+ 134               		ldi r22,lo8(1)
+ 135               		rcall i2c_start
+  78:mma7660.c     **** Transmission
+  79:mma7660.c     ****    i2c_stop();
+  80:mma7660.c     **** 
+  81:mma7660.c     ****    return data;
+  82:mma7660.c     **** }
+  83:mma7660.c     **** 
+  84:mma7660.c     **** void MMA7660_Init(void){
+  85:mma7660.c     **** 
+ 136               	lo8(0)
+ 137               		rcall i2c_start
+ 139 0002 00D0      	.LM2:
+ 140               		mov r24,r17
+ 141               		rcall i2c_write
+ 143 0006 00C0      	.LM3:
+ 144               		ldi r24,lo8(152)
+  86:mma7660.c     **** 
+  87:mma7660.c     ****    return data;
+  88:mma7660.c     **** }
+  89:mma7660.c     **** 
+  90:mma7660.c     **** void MMA7660_Init(void){
+ 145               	B1
+ 146               	.LM1:
+ 147 0008 0895      		ldi r24,lo8(152)
+ 148               		ldi r25,hi8(152)
+ 149               		ldi r22,lo8(0)
+ 150               		rcall i2c_start
+ 152               	.LM2:
+ 153               		mov r24,r17
+ 154               		rcall i2c_write
+ 156               	.LM3:
+ 157               		ldi r24,lo8(152)
+ 158               		ldi r25,hi8(152)
+ 159               		ldi r22,lo8(1)
+ 160               		rcall i2c_start
+ 162 0000 1F93      	.LM4:
+ 163               		movw r24,r28
+ 164               		adiw r24,1
+ 165 0002 182F      		ldi r22,lo8(0)
+ 166               		rcall i2c_read
+ 168               	.LM5:
+ 169 0004 812F      		rcall i2c_stop
+ 171               	.LM6:
+ 172               		ldd r24,Y+1
+ 173 0008 86FD      	/* epilogue start */
+ 174 000a 00C0      		pop __tmp_reg__
+ 175               		pop r28
+ 176               		pop r29
+ 177 000c 8F73      		pop r17
+ 178               		ret
+ 183 0010 806C      	.Lscope1:
+ 184               		.section	.text.MMA7660_GetTilt,"ax",@progbits
+ 186               	.global	MMA7660_GetTilt
+ 188 0012 1F91      	MMA7660_GetTilt:
+ 190               	.LM7:
+ 191               	.LFBB2:
+ 192               	/* prologue: function */
+ 193               	/* frame size = 0 */
+ 194               	.L5:
+ 196               	.LM8:
+ 197               		ldi r24,lo8(3)
+ 198               		rcall Read_MMA7660
+ 200               	.LM9:
+ 201               		sbrc r24,6
+ 202               		rjmp .L5
+ 203               	/* epilogue start */
+ 205 0000 0F93      	.LM10:
+ 206 0002 1F93      		ret
+ 211               	.Lscope2:
+ 212               		.section	.text.MMA7660_GetVal,"ax",@progbits
+ 215 000c 60E0      	.global	MMA7660_GetVal
+ 217               	MMA7660_GetVal:
+ 219 0010 812F      	.LM11:
+ 220 0012 00D0      	.LFBB3:
+ 221               		push r17
+ 222               	/* prologue: function */
+ 223 0014 802F      	/* frame size = 0 */
+ 224 0016 00D0      		mov r17,r24
+ 225               	.L9:
+ 227 0018 00D0      	.LM12:
+ 228               		mov r24,r17
+ 229               		rcall Read_MMA7660
+ 231 001a 1F91      	.LM13:
+ 232 001c 0F91      		sbrc r24,6
+ 233 001e 0895      		rjmp .L9
+ 235               	.LM14:
+ 236               		andi r24,lo8(63)
+ 238               	.LM15:
+ 239               		sbrc r24,5
+ 241               	.LM16:
+ 242               		ori r24,lo8(-64)
+ 243               	.L10:
+ 244               	/* epilogue start */
+ 246               	.LM17:
+ 247               		pop r17
+ 248 0000 00D0      		ret
+ 253 0006 00D0      	.Lscope3:
+ 254               		.section	.text.Write_MMA7660,"ax",@progbits
+ 258 000c 00D0      	.global	Write_MMA7660
+ 260               	Write_MMA7660:
+ 262 0010 60E5      	.LM18:
+ 263 0012 00D0      	.LFBB4:
+ 264               		push r16
+ 265               		push r17
+ 266 0014 89E0      	/* prologue: function */
+ 267 0016 60EE      	/* frame size = 0 */
+ 268 0018 00D0      		mov r17,r24
+ 269               		mov r16,r22
+ 271 001a 88E0      	.LM19:
+ 272 001c 60E6      		ldi r24,lo8(152)
+ 273 001e 00D0      		ldi r25,hi8(152)
+ 274               		ldi r22,lo8(0)
+ 275               		rcall i2c_start
+ 277 0022 60E0      	.LM20:
+ 278 0024 00D0      		mov r24,r17
+ 279               		rcall i2c_write
+ 281 0026 87E0      	.LM21:
+ 282 0028 61E0      		mov r24,r16
+ 283 002a 00D0      		rcall i2c_write
+ 285               	.LM22:
+ 286               		rcall i2c_stop
+ 287 002c 0895      	/* epilogue start */
+ 289               	.LM23:
+ 290               		pop r17
+ 291               		pop r16
+ 292               		ret
+DEFINED SYMBOLS
+                            *ABS*:00000000 mma7660.c
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:2      *ABS*:0000003f __SREG__
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:3      *ABS*:0000003e __SP_H__
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:4      *ABS*:0000003d __SP_L__
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:5      *ABS*:00000034 __CCP__
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:6      *ABS*:00000000 __tmp_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:7      *ABS*:00000001 __zero_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:73     .text.Read_MMA7660:00000000 Read_MMA7660
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:129    .text.MMA7660_GetTilt:00000000 MMA7660_GetTilt
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:158    .text.MMA7660_GetVal:00000000 MMA7660_GetVal
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:201    .text.Write_MMA7660:00000000 Write_MMA7660
+C:\Users\Ryan\AppData\Local\Temp/ccj6SSFg.s:240    .text.MMA7660_Init:00000000 MMA7660_Init
+
+UNDEFINED SYMBOLS
+i2c_start
+i2c_write
+i2c_read
+i2c_stop
+i2c_init

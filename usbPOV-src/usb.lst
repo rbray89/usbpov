@@ -1,0 +1,637 @@
+   1               		.file	"usb.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+ 100               		.section	.text.usbFunctionSetup,"ax",@progbits
+ 102               	.global	usbFunctionSetup
+ 104               	usbFunctionSetup:
+   1:usb.c         **** /* Name: main.c
+   2:usb.c         ****  * Project: hid-data, example how to use HID for data transfer
+   3:usb.c         ****  * Author: Christian Starkjohann
+   4:usb.c         ****  * Creation Date: 2008-04-11
+   5:usb.c         ****  * Tabsize: 4
+   6:usb.c         ****  * Copyright: (c) 2008 by OBJECTIVE DEVELOPMENT Software GmbH
+   7:usb.c         ****  * License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
+   8:usb.c         ****  * This Revision: $Id: main.c 777 2010-01-15 18:34:48Z cs $
+   9:usb.c         ****  */
+  10:usb.c         **** 
+  11:usb.c         **** /*
+  12:usb.c         **** This example should run on most AVRs with only little changes. No special
+  13:usb.c         **** hardware resources except INT0 are used. You may have to change usbconfig.h for
+  14:usb.c         **** different I/O pins for USB. Please note that USB D+ must be the INT0 pin, or
+  15:usb.c         **** at least be connected to INT0 as well.
+  16:usb.c         **** */
+  17:usb.c         **** 
+  18:usb.c         **** #include <avr/io.h>
+  19:usb.c         **** #include <avr/wdt.h>
+  20:usb.c         **** #include <avr/interrupt.h>  /* for sei() */
+  21:usb.c         **** #include <util/delay.h>     /* for _delay_ms() */
+  22:usb.c         **** #include <avr/eeprom.h>
+  23:usb.c         **** #include <avr/wdt.h>
+  24:usb.c         **** #include <string.h>
+  25:usb.c         **** 
+  26:usb.c         **** #include "usb.h"
+  27:usb.c         **** 
+  28:usb.c         **** #include <avr/pgmspace.h>   /* required by usbdrv.h */
+  29:usb.c         **** #include "usbdrv/usbdrv.h"
+  30:usb.c         **** 
+  31:usb.c         **** 
+  32:usb.c         **** /* The following variables store the status of the current data transfer */
+  33:usb.c         **** static uchar    currentAddressSend;
+  34:usb.c         **** static uchar    bytesRemainingSend;
+  35:usb.c         **** static uchar    currentAddressRecieve;
+  36:usb.c         **** static uchar    bytesRemainingRecieve;
+  37:usb.c         **** static uchar    firstSend;
+  38:usb.c         **** static uchar    firstRecieve;
+  39:usb.c         **** 
+  40:usb.c         **** 
+  41:usb.c         **** volatile uchar	usbDetected = 0;
+  42:usb.c         **** 
+  43:usb.c         **** PROGMEM char usbHidReportDescriptor[33] = {    /* USB report descriptor */
+  44:usb.c         ****     0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
+  45:usb.c         ****     0x09, 0x01,                    // USAGE (Vendor Usage 1)
+  46:usb.c         ****     0xa1, 0x01,                    // COLLECTION (Application)
+  47:usb.c         ****     0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+  48:usb.c         ****     0x26, 0x00, 0xff,              //   LOGICAL_MAXIMUM (255)
+  49:usb.c         ****     0x75, 0x08,                    //   REPORT_SIZE (8)
+  50:usb.c         ****     0x85, 0x01,                    //   REPORT_ID (1)
+  51:usb.c         ****     0x95, 0x80,                    //   REPORT_COUNT (129)
+  52:usb.c         ****     0x09, 0x00,                    //   USAGE (Undefined)
+  53:usb.c         ****     0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+  54:usb.c         ****     0x85, 0x02,                    //   REPORT_ID (2)
+  55:usb.c         ****     0x95, 0x80,              		//   REPORT_COUNT (129) 
+  56:usb.c         ****     0x09, 0x00,                    //   USAGE (Undefined)
+  57:usb.c         ****     0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+  58:usb.c         ****     0xc0                           // END_COLLECTION
+  59:usb.c         **** };
+  60:usb.c         **** /* Since we define only one feature report, we don't use report-IDs (which
+  61:usb.c         ****  * would be the first byte of the report). The entire report consists of 128
+  62:usb.c         ****  * opaque data bytes.
+  63:usb.c         ****  */
+  64:usb.c         **** 
+  65:usb.c         **** 
+  66:usb.c         **** /* ------------------------------------------------------------------------- */
+  67:usb.c         **** /* ----------------------------- USB interface ----------------------------- */
+  68:usb.c         **** /* ------------------------------------------------------------------------- */
+  69:usb.c         **** 
+  70:usb.c         **** /* ------------------------------------------------------------------------- */
+  71:usb.c         **** 
+  72:usb.c         **** /* usbFunctionRead() is called when the host requests a chunk of data from
+  73:usb.c         ****  * the device. For more information see the documentation in usbdrv/usbdrv.h.
+  74:usb.c         ****  */
+  75:usb.c         **** uchar   usbFunctionRead(uchar *data, uchar len)
+  76:usb.c         **** {
+  77:usb.c         ****         if(len > bytesRemainingSend)
+  78:usb.c         ****         len = bytesRemainingSend;
+  79:usb.c         **** 
+  80:usb.c         **** /*if(firstSend){
+  81:usb.c         **** 	data[0] = firstSend;
+  82:usb.c         **** 	data++;
+  83:usb.c         **** 	len--;
+  84:usb.c         **** 	firstSend = 0;
+  85:usb.c         **** 	}
+  86:usb.c         **** 	*/
+  87:usb.c         ****     eeprom_read_block(data, (uchar *)0 + currentAddressSend , len);
+  88:usb.c         **** 
+  89:usb.c         ****     currentAddressSend += len;
+  90:usb.c         ****     bytesRemainingSend -= len;
+  91:usb.c         **** 
+  92:usb.c         **** 
+  93:usb.c         ****     return len;
+  94:usb.c         **** 
+  95:usb.c         **** }
+  96:usb.c         **** 
+  97:usb.c         **** /* usbFunctionWrite() is called when the host sends a chunk of data to the
+  98:usb.c         ****  * device. For more information see the documentation in usbdrv/usbdrv.h.
+  99:usb.c         ****  */
+ 100:usb.c         **** uchar   usbFunctionWrite(uchar *data, uchar len)
+ 101:usb.c         **** {
+ 102:usb.c         ****     if(bytesRemainingRecieve == 0)
+ 103:usb.c         ****         return 1;               /* end of transfer */
+ 104:usb.c         **** 
+ 105:usb.c         ****     	if(len > bytesRemainingRecieve)
+ 106:usb.c         ****         	len = bytesRemainingRecieve;
+ 107:usb.c         **** 
+ 108:usb.c         **** if(firstRecieve){
+ 109:usb.c         **** 	data++;
+ 110:usb.c         **** 	len--;
+ 111:usb.c         **** 	firstRecieve = 0;
+ 112:usb.c         **** 	}
+ 113:usb.c         ****     		eeprom_write_block(data, (uchar *)0 + currentAddressRecieve, len);
+ 114:usb.c         **** 
+ 115:usb.c         ****     		currentAddressRecieve += len;
+ 116:usb.c         ****     		bytesRemainingRecieve -= len;
+ 117:usb.c         **** 			
+ 118:usb.c         **** 
+ 119:usb.c         ****     return bytesRemainingRecieve == 0; /* return 1 if this was the last chunk */
+ 120:usb.c         **** }
+ 121:usb.c         **** 
+ 122:usb.c         **** /* ------------------------------------------------------------------------- */
+ 123:usb.c         **** 
+ 124:usb.c         **** usbMsgLen_t usbFunctionSetup(uchar data[8])
+ 125:usb.c         **** {
+ 105               	125,.LM0-.LFBB1
+ 106               	.LM0:
+ 107               	.LFBB1:
+ 108               	/* prologue: function */
+ 109               	/* frame size = 0 */
+ 126:usb.c         ****   /* HID class request */
+ 110               	bn	68,0,126,.LM1-.LFBB1
+ 111               	.LM1:
+ 112 0000 21E0      		ldi r18,lo8(1)
+ 113 0002 2093 0000 		sts usbDetected,r18
+ 127:usb.c         ****     if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS){    /* HID class request */
+ 128:usb.c         ****         if(rq->bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowb
+ 114               	abn	68,0,128,.LM2-.LFBB1
+ 115               	.LM2:
+ 116 0006 FC01      		movw r30,r24
+ 129:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 130:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 117               	tabn	68,0,130,.LM3-.LFBB1
+ 118               	.LM3:
+ 119 0008 8081      		ld r24,Z
+ 120 000a 8076      		andi r24,lo8(96)
+ 121 000c 8032      		cpi r24,lo8(32)
+ 122 000e 01F4      		brne .L2
+ 131:usb.c         **** alue: ReportType (highbyte), ReportID (lowbyte) */
+ 123               	n	68,0,131,.LM4-.LFBB1
+ 124               	.LM4:
+ 125 0010 8181      		ldd r24,Z+1
+ 126 0012 8130      		cpi r24,lo8(1)
+ 127 0014 01F4      		brne .L3
+ 132:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 128               	bn	68,0,132,.LM5-.LFBB1
+ 129               	.LM5:
+ 130 0016 9281      		ldd r25,Z+2
+ 131 0018 9130      		cpi r25,lo8(1)
+ 132 001a 01F4      		brne .L4
+ 133:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 133               	bn	68,0,133,.LM6-.LFBB1
+ 134               	.LM6:
+ 135 001c 1092 0000 		sts currentAddressSend,__zero_reg__
+ 136 0020 00C0      		rjmp .L10
+ 137               	.L4:
+ 134:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 135:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 136:usb.c         ****             		currentAddressSend = 0;
+ 137:usb.c         **** 					firstSend = 1;
+ 138               	bn	68,0,137,.LM7-.LFBB1
+ 139               	.LM7:
+ 140 0022 9230      		cpi r25,lo8(2)
+ 141 0024 01F4      		brne .L5
+ 138:usb.c         ****  	if(rq->wValue.bytes[0] == 1){
+ 142               	abn	68,0,138,.LM8-.LFBB1
+ 143               	.LM8:
+ 144 0026 80E8      		ldi r24,lo8(-128)
+ 145 0028 8093 0000 		sts currentAddressSend,r24
+ 146               	.L10:
+ 139:usb.c         **** alue: ReportType (highbyte), ReportID (lowbyte) */
+ 147               	bn	68,0,139,.LM9-.LFBB1
+ 148               	.LM9:
+ 149 002c 9093 0000 		sts firstSend,r25
+ 150               	.L5:
+ 140:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 141:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 142:usb.c         ****             		currentAddressSend = 0;
+ 151               	abn	68,0,142,.LM10-.LFBB1
+ 152               	.LM10:
+ 153 0030 81E8      		ldi r24,lo8(-127)
+ 154 0032 8093 0000 		sts bytesRemainingSend,r24
+ 155 0036 00C0      		rjmp .L11
+ 156               	.L3:
+ 143:usb.c         **** lowbyte) */
+ 144:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 145:usb.c         ****             		currentAddressSend = 0;
+ 157               	n	68,0,145,.LM11-.LFBB1
+ 158               	.LM11:
+ 159 0038 8930      		cpi r24,lo8(9)
+ 160 003a 01F4      		brne .L2
+ 146:usb.c         **** lowbyte) */
+ 161               	abn	68,0,146,.LM12-.LFBB1
+ 162               	.LM12:
+ 163 003c 8281      		ldd r24,Z+2
+ 164 003e 8130      		cpi r24,lo8(1)
+ 165 0040 01F4      		brne .L7
+ 147:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 166               	bn	68,0,147,.LM13-.LFBB1
+ 167               	.LM13:
+ 168 0042 1092 0000 		sts currentAddressRecieve,__zero_reg__
+ 169 0046 00C0      		rjmp .L8
+ 170               	.L7:
+ 148:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 149:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 171               	bn	68,0,149,.LM14-.LFBB1
+ 172               	.LM14:
+ 173 0048 8230      		cpi r24,lo8(2)
+ 174 004a 01F4      		brne .L8
+ 150:usb.c         **** alue: ReportType (highbyte), ReportID (lowbyte) */
+ 151:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 175               	abn	68,0,151,.LM15-.LFBB1
+ 176               	.LM15:
+ 177 004c 80E8      		ldi r24,lo8(-128)
+ 178 004e 8093 0000 		sts currentAddressRecieve,r24
+ 179               	.L8:
+ 152:usb.c         **** alue: ReportType (highbyte), ReportID (lowbyte) */
+ 153:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 154:usb.c         ****             		currentAddressSend = 0;
+ 155:usb.c         **** 					firstSend = 1;
+ 180               	bn	68,0,155,.LM16-.LFBB1
+ 181               	.LM16:
+ 182 0052 81E0      		ldi r24,lo8(1)
+ 183 0054 8093 0000 		sts firstRecieve,r24
+ 156:usb.c         ****  	if(rq->wValue.bytes[0] == 1){
+ 184               	abn	68,0,156,.LM17-.LFBB1
+ 185               	.LM17:
+ 186 0058 81E8      		ldi r24,lo8(-127)
+ 187 005a 8093 0000 		sts bytesRemainingRecieve,r24
+ 188               	.L11:
+ 189 005e 8FEF      		ldi r24,lo8(-1)
+ 190 0060 0895      		ret
+ 191               	.L2:
+ 157:usb.c         **** alue: ReportType (highbyte), ReportID (lowbyte) */
+ 192               	68,0,157,.LM18-.LFBB1
+ 193               	.LM18:
+ 194 0062 80E0      		ldi r24,lo8(0)
+ 158:usb.c         **** >bRequest == USBRQ_HID_GET_REPORT){  /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+ 159:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 160:usb.c         ****             		currentAddressSend = 0;
+ 161:usb.c         **** 					firstSend = 1;
+ 162:usb.c         **** 
+ 163:usb.c         ****         	}
+ 195               	tabn	68,0,163,.LM19-.LFBB1
+ 196               	.LM19:
+ 197 0064 0895      		ret
+ 199               	.Lscope1:
+ 200               		.section	.text.usbHardwareInit,"ax",@progbits
+ 202               	.global	usbHardwareInit
+ 204               	usbHardwareInit:
+ 164:usb.c         **** e.bytes[0] == 1){
+ 165:usb.c         ****             		currentAddressSend = 0;
+ 205               	,0,165,.LM20-.LFBB2
+ 206               	.LM20:
+ 207               	.LFBB2:
+ 208               	/* prologue: function */
+ 209               	/* frame size = 0 */
+ 166:usb.c         **** lowbyte) */
+ 167:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 168:usb.c         ****             		currentAddressSend = 0;
+ 210               	bn	68,0,168,.LM21-.LFBB2
+ 211               	.LM21:
+ 212 0000 80EB      		ldi r24,lo8(-80)
+ 213 0002 8BB9      		out 43-32,r24
+ 169:usb.c         **** lowbyte) */
+ 170:usb.c         ****           	if(rq->wValue.bytes[0] == 1){
+ 171:usb.c         ****             		currentAddressSend = 0;
+ 172:usb.c         **** 					firstSend = 1;
+ 214               	abn	68,0,172,.LM22-.LFBB2
+ 215               	.LM22:
+ 216 0004 569A      		sbi 42-32,6
+ 217 0006 20E0      		ldi r18,lo8(0)
+ 218               	.LBB12:
+ 219               	.LBB13:
+ 220               	.LBB14:
+ 221               	.LBB15:
+ 223               	.Ltext1:
+   1:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** /* Copyright (c) 2002, Marek Michalkiewicz
+   2:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    Copyright (c) 2007 Joerg Wunsch
+   3:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    All rights reserved.
+   4:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+   5:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    Redistribution and use in source and binary forms, with or without
+   6:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    modification, are permitted provided that the following conditions are met:
+   7:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+   8:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    * Redistributions of source code must retain the above copyright
+   9:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****      notice, this list of conditions and the following disclaimer.
+  10:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  11:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    * Redistributions in binary form must reproduce the above copyright
+  12:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****      notice, this list of conditions and the following disclaimer in
+  13:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****      the documentation and/or other materials provided with the
+  14:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****      distribution.
+  15:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  16:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****    * Neither the name of the copyright holders nor the names of
+  17:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****      contributors may be used to endorse or promote products derived
+  18:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****      from this software without specific prior written permission.
+  19:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  20:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  21:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  22:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  23:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  24:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  25:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  26:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  27:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  28:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  29:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  30:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****   POSSIBILITY OF SUCH DAMAGE. */
+  31:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  32:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** /* $Id: delay_basic.h,v 1.1 2007/05/13 21:23:20 joerg_wunsch Exp $ */
+  33:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  34:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** #ifndef _UTIL_DELAY_BASIC_H_
+  35:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** #define _UTIL_DELAY_BASIC_H_ 1
+  36:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  37:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** #include <inttypes.h>
+  38:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  39:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** /** \file */
+  40:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** /** \defgroup util_delay_basic <util/delay_basic.h>: Basic busy-wait delay loops
+  41:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     \code
+  42:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     #include <util/delay_basic.h>
+  43:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     \endcode
+  44:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  45:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     The functions in this header file implement simple delay loops
+  46:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     that perform a busy-waiting.  They are typically used to
+  47:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     facilitate short delays in the program execution.  They are
+  48:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     implemented as count-down loops with a well-known CPU cycle
+  49:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     count per loop iteration.  As such, no other processing can
+  50:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     occur simultaneously.  It should be kept in mind that the
+  51:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     functions described here do not disable interrupts.
+  52:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  53:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     In general, for long delays, the use of hardware timers is
+  54:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     much preferrable, as they free the CPU, and allow for
+  55:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     concurrent processing of other events while the timer is
+  56:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     running.  However, in particular for very short delays, the
+  57:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     overhead of setting up a hardware timer is too much compared
+  58:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     to the overall delay time.
+  59:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  60:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     Two inline functions are provided for the actual delay algorithms.
+  61:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  62:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** */
+  63:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  64:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** #if !defined(__DOXYGEN__)
+  65:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** static inline void _delay_loop_1(uint8_t __count) __attribute__((always_inline));
+  66:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** static inline void _delay_loop_2(uint16_t __count) __attribute__((always_inline));
+  67:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** #endif
+  68:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  69:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** /** \ingroup util_delay_basic
+  70:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  71:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     Delay loop using an 8-bit counter \c __count, so up to 256
+  72:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     iterations are possible.  (The value 256 would have to be passed
+  73:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     as 0.)  The loop executes three CPU cycles per iteration, not
+  74:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     including the overhead the compiler needs to setup the counter
+  75:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     register.
+  76:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  77:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     Thus, at a CPU speed of 1 MHz, delays of up to 768 microseconds
+  78:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     can be achieved.
+  79:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** */
+  80:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** void
+  81:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** _delay_loop_1(uint8_t __count)
+  82:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** {
+  83:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 	__asm__ volatile (
+  84:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 		"1: dec %0" "\n\t"
+  85:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 		"brne 1b"
+  86:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 		: "=r" (__count)
+  87:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 		: "0" (__count)
+  88:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 	);
+  89:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** }
+  90:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  91:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** /** \ingroup util_delay_basic
+  92:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  93:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     Delay loop using a 16-bit counter \c __count, so up to 65536
+  94:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     iterations are possible.  (The value 65536 would have to be
+  95:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     passed as 0.)  The loop executes four CPU cycles per iteration,
+  96:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     not including the overhead the compiler requires to setup the
+  97:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     counter register pair.
+  98:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 
+  99:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     Thus, at a CPU speed of 1 MHz, delays of up to about 262.1
+ 100:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****     milliseconds can be achieved.
+ 101:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h ****  */
+ 102:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** void
+ 103:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** _delay_loop_2(uint16_t __count)
+ 104:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** {
+ 105:c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h **** 	__asm__ volatile (
+ 224               	,0,105,.LM23-.LFBB2
+ 225               	.LM23:
+ 226 0008 48EB      		ldi r20,lo8(3000)
+ 227 000a 5BE0      		ldi r21,hi8(3000)
+ 228 000c 00C0      		rjmp .L13
+ 229               	.L14:
+ 230               	.LBE15:
+ 231               	.LBE14:
+ 232               	.LBE13:
+ 233               	.LBE12:
+ 235               	.Ltext2:
+ 173:usb.c         ****  	if(rq->wValue.bytes[0] == 1){
+ 174:usb.c         ****             		currentAddressSend = 0;
+ 175:usb.c         **** 					firstSend = 1;
+ 176:usb.c         **** 
+ 236               	,176,.LM24-.LFBB2
+ 237               	.LM24:
+ 238               	/* #APP */
+ 239               	 ;  176 "usb.c" 1
+ 240 000e A895      		wdr
+ 241               	 ;  0 "" 2
+ 242               	/* #NOAPP */
+ 243               	.LBB19:
+ 244               	.LBB18:
+ 245               	.LBB17:
+ 246               	.LBB16:
+ 248               	.Ltext3:
+ 250               	.LM25:
+ 251 0010 CA01      		movw r24,r20
+ 252               	/* #APP */
+ 253               	 ;  105 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 254 0012 0197      		1: sbiw r24,1
+ 255 0014 01F4      		brne 1b
+ 256               	 ;  0 "" 2
+ 257               	/* #NOAPP */
+ 258               	.L13:
+ 259               	.LBE16:
+ 260               	.LBE17:
+ 261               	.LBE18:
+ 262               	.LBE19:
+ 264               	.Ltext4:
+ 266               	.LM26:
+ 267 0016 2150      		subi r18,lo8(-(-1))
+ 268 0018 01F4      		brne .L14
+ 177:usb.c         **** if(rq->wValue.bytes[0] == 1){
+ 178:usb.c         ****             		currentAddressSend = 0;
+ 179:usb.c         **** 					firstSend = 1;
+ 180:usb.c         **** 
+ 269               	27:
+ 270               		cbi 42-32,6
+ 271 001a 5698      	/* epilogue start */
+ 181:usb.c         **** if(rq->wValue.bytes[0] == 1){
+ 182:usb.c         ****             		currentAddressSend = 0;
+ 183:usb.c         **** 					firstSend = 1;
+ 184:usb.c         **** 
+ 185:usb.c         ****         	}
+ 273               	0,0,.Ltext4
+ 274               	.Ltext4:
+ 276               	.LM26:
+ 277               		subi r18,lo8(-(-1))
+ 278               		brne .L14
+ 280               	.LM27:
+ 281               		cbi 42-32,6
+ 282               	/* epilogue start */
+ 284               	.LM28:
+ 285               		ret
+ 290               	.Lscope2:
+ 291 0000 1F93      		.section	.text.usbFunctionWrite,"ax",@progbits
+ 295               	.global	usbFunctionWrite
+ 297 0004 8091 0000 	usbFunctionWrite:
+ 299 000a 01F0      	.LM29:
+ 300               	.LFBB3:
+ 301 000c 162F      		push r17
+ 302 000e 8617      	/* prologue: function */
+ 303 0010 00F4      	/* frame size = 0 */
+ 304 0012 182F      		movw r18,r24
+ 306               	.LM30:
+ 307               		lds r24,bytesRemainingRecieve
+ 308 0014 8091 0000 		tst r24
+ 309 0018 8823      		breq .L23
+ 310 001a 01F0      	.L17:
+ 311               		mov r17,r22
+ 312               		cp r24,r22
+ 313 001c 2F5F      		brsh .L19
+ 314 001e 3F4F      		mov r17,r24
+ 315               	.L19:
+ 317 0020 1150      	.LM31:
+ 318               		lds r24,firstRecieve
+ 319               		tst r24
+ 320 0022 1092 0000 		breq .L20
+ 322               	.LM32:
+ 323               		subi r18,lo8(-(1))
+ 324 0026 6091 0000 		sbci r19,hi8(-(1))
+ 326 002c 70E0      	.LM33:
+ 327 002e 412F      		subi r17,lo8(-(-1))
+ 329 0032 00D0      	.LM34:
+ 330               		sts firstRecieve,__zero_reg__
+ 331               	.L20:
+ 333 0038 810F      	.LM35:
+ 334 003a 8093 0000 		lds r22,currentAddressRecieve
+ 335               		movw r24,r18
+ 336               		ldi r23,lo8(0)
+ 337 003e 8091 0000 		mov r20,r17
+ 338 0042 811B      		ldi r21,lo8(0)
+ 339 0044 8093 0000 		rcall __eewr_block_m48a
+ 341               	.LM36:
+ 342 0048 90E0      		lds r24,currentAddressRecieve
+ 343 004a 8823      		add r24,r17
+ 344 004c 01F4      		sts currentAddressRecieve,r24
+ 346 004e 91E0      	.LM37:
+ 347               		lds r24,bytesRemainingRecieve
+ 348               		sub r24,r17
+ 349               		sts bytesRemainingRecieve,r24
+ 351               	.LM38:
+ 352 0052 1F91      		ldi r25,lo8(0)
+ 353 0054 0895      		tst r24
+ 354               		brne .L18
+ 355               	.L23:
+ 356               		ldi r25,lo8(1)
+ 357               	.L18:
+ 359               	.LM39:
+ 360               		mov r24,r25
+ 361               	/* epilogue start */
+ 362               		pop r17
+ 363               		ret
+ 365               	.Lscope3:
+ 366 0000 1F93      		.section	.text.usbFunctionRead,"ax",@progbits
+ 370               	.global	usbFunctionRead
+ 372 0006 162F      	usbFunctionRead:
+ 374 000a 00F4      	.LM40:
+ 375 000c 122F      	.LFBB4:
+ 376               		push r17
+ 377               	/* prologue: function */
+ 378               	/* frame size = 0 */
+ 380 0012 70E0      	.LM41:
+ 381 0014 412F      		lds r18,bytesRemainingSend
+ 382 0016 50E0      		mov r17,r22
+ 383 0018 00D0      		cp r18,r22
+ 384               		brsh .L25
+ 385               		mov r17,r18
+ 386 001a 8091 0000 	.L25:
+ 388 0020 8093 0000 	.LM42:
+ 389               		lds r22,currentAddressSend
+ 390               		ldi r23,lo8(0)
+ 391 0024 8091 0000 		mov r20,r17
+ 392 0028 811B      		ldi r21,lo8(0)
+ 393 002a 8093 0000 		rcall __eerd_block_m48a
+ 395               	.LM43:
+ 396 002e 812F      		lds r24,currentAddressSend
+ 397               		add r24,r17
+ 398 0030 1F91      		sts currentAddressSend,r24
+ 400               	.LM44:
+ 401               		lds r24,bytesRemainingSend
+ 402               		sub r24,r17
+ 403               		sts bytesRemainingSend,r24
+ 405               	.LM45:
+ 406               		mov r24,r17
+ 407               	/* epilogue start */
+ 408 0000 00        		pop r17
+ 409               		ret
+ 411               	.Lscope4:
+ 412               	.global	usbDetected
+ 413               	.global	usbDetected
+ 414 0000 06        		.section .bss
+ 417 0003 09        	usbDetected:
+ 418 0004 01        		.skip 1,0
+ 419 0005 A1        	.global	usbDescriptorHidReport
+ 420 0006 01        		.section	.progmem.data,"a",@progbits
+ 423 0009 26        	usbDescriptorHidReport:
+ 424 000a 00        		.byte	6
+ 425 000b FF        		.byte	0
+ 426 000c 75        		.byte	-1
+ 427 000d 08        		.byte	9
+ 428 000e 85        		.byte	1
+ 429 000f 01        		.byte	-95
+ 430 0010 95        		.byte	1
+ 431 0011 80        		.byte	21
+ 432 0012 09        		.byte	0
+ 433 0013 00        		.byte	38
+ 434 0014 B2        		.byte	0
+ 435 0015 02        		.byte	-1
+ 436 0016 01        		.byte	117
+ 437 0017 85        		.byte	8
+ 438 0018 02        		.byte	-123
+ 439 0019 95        		.byte	1
+ 440 001a 80        		.byte	-107
+ 441 001b 09        		.byte	-128
+ 442 001c 00        		.byte	9
+ 443 001d B2        		.byte	0
+ 444 001e 02        		.byte	-78
+ 445 001f 01        		.byte	2
+ 446 0020 C0        		.byte	1
+ 447               		.byte	-123
+ 448               		.byte	2
+ 449               		.byte	-107
+ 450               		.byte	-128
+ 451               		.byte	9
+ 452               		.byte	0
+ 453               		.byte	-78
+ 454               		.byte	2
+ 455               		.byte	1
+ 456               		.byte	-64
+ 457               		.lcomm currentAddressSend,1
+ 458               		.lcomm bytesRemainingSend,1
+ 459               		.lcomm currentAddressRecieve,1
+ 460               		.lcomm bytesRemainingRecieve,1
+ 461               		.lcomm firstSend,1
+ 462               		.lcomm firstRecieve,1
+DEFINED SYMBOLS
+                            *ABS*:00000000 usb.c
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:2      *ABS*:0000003f __SREG__
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:3      *ABS*:0000003e __SP_H__
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:4      *ABS*:0000003d __SP_L__
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:5      *ABS*:00000034 __CCP__
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:6      *ABS*:00000000 __tmp_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:7      *ABS*:00000001 __zero_reg__
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:104    .text.usbFunctionSetup:00000000 usbFunctionSetup
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:407    .bss:00000000 usbDetected
+                             .bss:00000001 currentAddressSend
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:450    .bss:00000005 firstSend
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:447    .bss:00000002 bytesRemainingSend
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:448    .bss:00000003 currentAddressRecieve
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:451    .bss:00000006 firstRecieve
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:449    .bss:00000004 bytesRemainingRecieve
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:204    .text.usbHardwareInit:00000000 usbHardwareInit
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:287    .text.usbFunctionWrite:00000000 usbFunctionWrite
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:362    .text.usbFunctionRead:00000000 usbFunctionRead
+C:\Users\Ryan\AppData\Local\Temp/ccgF03Vj.s:413    .progmem.data:00000000 usbDescriptorHidReport
+
+UNDEFINED SYMBOLS
+__eewr_block_m48a
+__eerd_block_m48a
+__do_clear_bss
